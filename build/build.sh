@@ -82,8 +82,10 @@ build_packages() {
     done
 
     echo "==> Building packages in $IMAGE (output: $DIST_DIR)"
+    # Map the calling user onto the image's builder user (uid 1000), whatever its
+    # own uid is; plain keep-id only works where the host user is uid 1000 too.
     podman run --rm \
-        --userns=keep-id \
+        --userns=keep-id:uid=1000,gid=1000 \
         --env-file "$env_file" \
         -v "$TARGET_DIR:/target:ro" \
         -v "$REPO_ROOT/build/container/build-in-container.sh:/usr/local/bin/build-in-container.sh:ro" \
