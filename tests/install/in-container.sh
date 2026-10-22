@@ -96,4 +96,7 @@ echo $out;
 "$TEST_PHP_BINARY" -r 'exit(function_exists("json_encode") ? 0 : 1);' \
     || echo "NOTE: json extension not loaded, json part of the script was skipped"
 
+# CVE-2023-0662: every target ships max_multipart_body_parts (ini_get() is false if unknown).
+"$TEST_PHP_BINARY" -r 'exit(ini_get("max_multipart_body_parts") === false ? 1 : 0);' \
+    || fail "max_multipart_body_parts is not a known INI setting (CVE-2023-0662 fix missing)"
 echo "OK (positive): patched package installed and working"
