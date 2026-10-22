@@ -43,8 +43,17 @@ source "$TARGET_DIR/target.conf"
 # Space separated lists may be written over several lines in target.conf.
 EXTRA_DEB_URLS="$(echo ${EXTRA_DEB_URLS:-})"
 
-IMAGE="php-backport-builder:${TARGET//\//-}"
-DIST_DIR="$REPO_ROOT/dist/$TARGET"
+# Packages are built natively for the host architecture. amd64 output goes to dist/,
+# any other architecture to dist-<arch>/, so the amd64 layout stays as it was.
+ARCH="${ARCH:-$(podman info --format '{{.Host.Arch}}')}"
+if [[ " ${ARCHES:-amd64} " != *" $ARCH "* ]]; then
+    echo "ERROR: target '$TARGET' is not built for $ARCH (ARCHES=\"${ARCHES:-amd64}\")" >&2
+    exit 1
+fi
+DIST_ROOT=dist; [ "$ARCH" = amd64 ] || DIST_ROOT="dist-$ARCH"
+
+IMAGE="php-backport-builder:${TARGET//\//-}-$ARCH"
+DIST_DIR="$REPO_ROOT/$DIST_ROOT/$TARGET"
 CACHE_DIR="$REPO_ROOT/cache/$TARGET"
 
 build_image() {

@@ -14,34 +14,47 @@ jobs:
       list: ${{ steps.list.outputs.list }}
     steps:
       - uses: actions/checkout@v4
+      # One matrix entry per target and architecture (ARCHES in target.conf, default amd64),
+      # each on a native runner.
       - id: list
         run: |
-          echo "list=$(cd targets && find . -mindepth 2 -maxdepth 2 -type d -printf '%P\n' \
-            | sort -V | jq -R . | jq -sc .)" >> "$GITHUB_OUTPUT"
+          echo "list=$(cd targets && find . -mindepth 2 -maxdepth 2 -type d -printf '%P\n' | sort -V \
+            | while read -r t; do
+                for a in $(ARCHES=amd64; source "$t/target.conf"; echo "$ARCHES"); do
+                  jq -nc --arg t "$t" --arg a "$a" \
+                    '{target: $t, arch: $a, runner: (if $a == "arm64" then "ubuntu-24.04-arm" else "ubuntu-24.04" end)}'
+                done
+              done | jq -sc .)" >> "$GITHUB_OUTPUT"
 
   build:
     needs: targets
-    runs-on: ubuntu-24.04
+    name: build (${{ matrix.target }}, ${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 240
     strategy:
       fail-fast: false
       matrix:
-        target: ${{ fromJSON(needs.targets.outputs.list) }}
+        include: ${{ fromJSON(needs.targets.outputs.list) }}
     steps:
       - uses: actions/checkout@v4
+      - name: Install podman
+        run: command -v podman || { sudo apt-get update && sudo apt-get install -y podman; }
       - name: Build
         run: build/build.sh "${{ matrix.target }}" all
       - name: Install test
         run: make -C tests TEST_TARGETS="${{ matrix.target }}"
-      - name: Artifact name
+      - name: Artifact name and path
         id: name
-        run: echo "name=${TARGET//\//_}" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "name=${TARGET//\//_}@$ARCH" >> "$GITHUB_OUTPUT"
+          if [ "$ARCH" = amd64 ]; then echo "path=dist/$TARGET/"; else echo "path=dist-$ARCH/$TARGET/"; fi >> "$GITHUB_OUTPUT"
         env:
           TARGET: ${{ matrix.target }}
+          ARCH: ${{ matrix.arch }}
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.name.outputs.name }}
-          path: dist/${{ matrix.target }}/
+          path: ${{ steps.name.outputs.path }}
           if-no-files-found: error
 
   publish:
@@ -59,30 +72,37 @@ jobs:
           path: artifacts
       - name: Require at least one built target
         run: ls artifacts/*/ >/dev/null
-      - name: Restore dist/<release>/<php> layout
+      - name: Restore dist/<release>/<php> and dist-<arch>/<release>/<php> layout
         run: |
           for a in artifacts/*/; do
-            t="$(basename "$a" | sed 's#_#/#')"
-            mkdir -p "dist/$t" && cp -a "$a". "dist/$t/"
+            n="$(basename "$a")"; arch="${n##*@}"; t="$(sed 's#_#/#' <<<"${n%@*}")"
+            root=dist; [ "$arch" = amd64 ] || root="dist-$arch"
+            mkdir -p "$root/$t" && cp -a "$a". "$root/$t/"
           done
       - name: Release tarballs
         run: |
           mkdir -p release
-          for d in dist/*/*/; do
-            t="${d#dist/}"; t="${t%/}"
-            tar -C dist -czf "release/${t//\//_}.tar.gz" "$t"
+          for root in dist dist-*; do
+            [ -d "$root" ] || continue
+            suffix=""; [ "$root" = dist ] || suffix="_${root#dist-}"
+            for d in "$root"/*/*/; do
+              t="${d#"$root"/}"; t="${t%/}"
+              tar -C "$root" -czf "release/${t//\//_}${suffix}.tar.gz" "$t"
+            done
           done
           (cd release && sha256sum ./*.tar.gz > SHA256SUMS)
       - name: Release notes
         run: |
           {
-            echo "| Target | Source package | Version |"
-            echo "|---|---|---|"
-            for d in dist/*/*/; do
-              t="${d#dist/}"; t="${t%/}"
+            echo "| Target | Architecture | Source package | Version |"
+            echo "|---|---|---|---|"
+            for d in dist/*/*/ dist-*/*/*/; do
+              [ -f "$d/BUILD-INFO.txt" ] || continue
+              t="${d#*/}"; t="${t%/}"
+              arch="$(sed -n 's/^architecture: *//p' "$d/BUILD-INFO.txt")"
               src="$(sed -n 's/^source package: *//p' "$d/BUILD-INFO.txt")"
               ver="$(sed -n 's/^new version: *//p' "$d/BUILD-INFO.txt")"
-              echo "| \`$t\` | \`$src\` | \`$ver\` |"
+              echo "| \`$t\` | $arch | \`$src\` | \`$ver\` |"
             done
             echo
             echo "Install from the apt repository, or download a target tarball below and"

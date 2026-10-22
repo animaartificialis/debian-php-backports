@@ -41,7 +41,10 @@ out-of-memory bailout; [advisory](https://github.com/php/php-src/security/adviso
 | Ubuntu 20.04 focal | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-104+0~20261021.134+ubuntu20.04~1+animaa1` |
 | Ubuntu 20.04 focal | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+ubuntu20.04~1+animaa1` |
 
-Only `amd64` is built.
+All targets are built for `amd64`. Three are also built for `arm64`: Debian 10 buster
+PHP 7.4 and Ubuntu 20.04 focal PHP 5.6 and 7.4. These are the first releases that
+deb.sury.org no longer builds for. Older releases were rarely run on arm64, and buster's
+own PHP 7.3 already has an arm64 fix from [Freexian ELTS](https://www.freexian.com/lts/extended/).
 
 ### Components
 
@@ -105,6 +108,7 @@ does not speak TLS 1.2. On squeeze, use the release tarballs below.
 
 Every [release](https://github.com/animaartificialis/debian-php-backports/releases) has one
 tarball per target with all its `.deb` files, a `Packages` index and `BUILD-INFO.txt`.
+The `arm64` tarballs end in `_arm64.tar.gz`; all others are `amd64`.
 Check it against `SHA256SUMS` and either install the packages with `dpkg -i`, or unpack
 it and use it as a local repository (squeeze: use `dpkg -i`, its apt has no `[trusted=yes]`):
 

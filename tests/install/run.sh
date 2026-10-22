@@ -12,7 +12,9 @@ if [ $# -ne 1 ]; then
 fi
 TARGET="${1%/}"
 TARGET_CONF="$REPO_ROOT/targets/$TARGET/target.conf"
-DIST_DIR="$REPO_ROOT/dist/$TARGET"
+ARCH="${ARCH:-$(podman info --format '{{.Host.Arch}}')}"
+DIST_ROOT=dist; [ "$ARCH" = amd64 ] || DIST_ROOT="dist-$ARCH"
+DIST_DIR="$REPO_ROOT/$DIST_ROOT/$TARGET"
 
 if [ ! -f "$TARGET_CONF" ]; then
     echo "ERROR: unknown target '$TARGET' ($TARGET_CONF not found)" >&2
