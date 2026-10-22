@@ -2,6 +2,11 @@
 
 PHP packages with security fixes for Debian releases that no longer receive them.
 
+> **Only for archived Debian releases: squeeze, wheezy, jessie, stretch and buster.**
+> On Debian 11 bullseye and newer, use [deb.sury.org](https://deb.sury.org/) instead —
+> it builds every PHP version for supported releases and gets fixes first. Nothing
+> here is built for, or should be installed on, a supported release.
+
 [deb.sury.org](https://deb.sury.org/) builds PHP — including old PHP versions — but only for
 Debian and Ubuntu releases that are still supported. Servers running an archived Debian
 release (squeeze to buster) get nothing. This repository covers those: it rebuilds PHP
