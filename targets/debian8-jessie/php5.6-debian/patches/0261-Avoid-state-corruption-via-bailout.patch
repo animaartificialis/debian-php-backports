@@ -21,8 +21,9 @@ Backported from the PHP 7.4 version:
   destroying them; EG(error_handling) and EG(exception) are reset after
   the object store is freed.
 - "|| 1" instead of "|| true" in the session upload progress callback.
-- The max_multipart_body_parts hunk of the 7.4 patch is left out, the
-  code is already there.
+- The max_multipart_body_parts hunk of the 7.4 patch is left out; the
+  limit comes with the CVE-2023-0662 backport (Introduce
+  max_multipart_body_parts INI).
 
 Co-authored-by: Ilija Tovilo <ilija.tovilo@me.com>
 ---

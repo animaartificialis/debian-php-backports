@@ -1,1 +1,3 @@
 0001-Avoid-state-corruption-via-bailout-php54.patch
+0262-Fix-repeated-warning-for-file-uploads-limit-exceedin-php54.patch
+0263-Introduce-max_multipart_body_parts-INI-php54.patch

@@ -42,9 +42,9 @@ but it closes both problems in a simpler way:
 
 | Debian | PHP | Component | Source from | Source package | Version |
 |---|---|---|---|---|---|
-| Debian 6 squeeze | 5.4 | `debian7` | Debian 7 | `php5` | `5.4.45-1+animaa1~squeeze` |
-| Debian 7 wheezy | 5.4 | `debian` | Debian 7 | `php5` | `5.4.45-0+deb7u14+animaa1` |
-| Debian 8 jessie | 5.6 | `debian` | Debian 8 | `php5` | `5.6.40+dfsg-0+deb8u12+animaa1` |
+| Debian 6 squeeze | 5.4 | `debian7` | Debian 7 | `php5` | `5.4.45-1+animaa2~squeeze` |
+| Debian 7 wheezy | 5.4 | `debian` | Debian 7 | `php5` | `5.4.45-0+deb7u14+animaa2` |
+| Debian 8 jessie | 5.6 | `debian` | Debian 8 | `php5` | `5.6.40+dfsg-0+deb8u12+animaa2` |
 | Debian 8 jessie | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-105+0~20261022.135+debian8~1+animaa1` |
 | Debian 8 jessie | 7.1 | `sury` | deb.sury.org | `php7.1` | `7.1.33-81+0~20261022.128+debian8~1+animaa1` |
 | Debian 9 stretch | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-105+0~20261022.135+debian9~1+animaa1` |
@@ -72,8 +72,9 @@ The apt component says where the source comes from, and therefore what adding it
 - **`debian`** — the PHP version the release itself shipped, rebuilt from the last
   official Debian source with the fix added. A drop-in replacement: `apt-get upgrade`
   replaces only packages you already have, with the same version plus the fix.
-  This is what most servers want. It adds only this fix to the last official source, not
-  the fixes released after it. On jessie, where the last Debian source is old, the `sury`
+  This is what most servers want. It adds this fix and the CVE-2023-0662 fix
+  (`max_multipart_body_parts`) to the last official source, but not other fixes released
+  after it. On jessie, where the last Debian source is old, the `sury`
   component has more fixes. Stretch and buster have no `debian` component: their own PHP
   is fixed in [Freexian ELTS](https://www.freexian.com/lts/extended/docs/how-to-use-extended-lts/).
 - **`sury`** — Ondřej Surý's PHP packages (which already contain the fix), rebuilt for a
