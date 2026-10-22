@@ -1,0 +1,119 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  targets:
+    runs-on: ubuntu-24.04
+    outputs:
+      list: ${{ steps.list.outputs.list }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: list
+        run: |
+          echo "list=$(cd targets && find . -mindepth 2 -maxdepth 2 -type d -printf '%P\n' \
+            | sort -V | jq -R . | jq -sc .)" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: targets
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJSON(needs.targets.outputs.list) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: build/build.sh "${{ matrix.target }}" all
+      - name: Install test
+        run: make -C tests TEST_TARGETS="${{ matrix.target }}"
+      - name: Artifact name
+        id: name
+        run: echo "name=${TARGET//\//_}" >> "$GITHUB_OUTPUT"
+        env:
+          TARGET: ${{ matrix.target }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.name.outputs.name }}
+          path: dist/${{ matrix.target }}/
+          if-no-files-found: error
+
+  publish:
+    # Only tagged releases are published; branch builds just prove the targets build.
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Restore dist/<release>/<php> layout
+        run: |
+          for a in artifacts/*/; do
+            t="$(basename "$a" | sed 's#_#/#')"
+            mkdir -p "dist/$t" && cp -a "$a". "dist/$t/"
+          done
+      - name: Release tarballs
+        run: |
+          mkdir -p release
+          for d in dist/*/*/; do
+            t="${d#dist/}"; t="${t%/}"
+            tar -C dist -czf "release/${t//\//_}.tar.gz" "$t"
+          done
+          (cd release && sha256sum ./*.tar.gz > SHA256SUMS)
+      - name: Release notes
+        run: |
+          {
+            echo "| Target | Source package | Version |"
+            echo "|---|---|---|"
+            for d in dist/*/*/; do
+              t="${d#dist/}"; t="${t%/}"
+              src="$(sed -n 's/^source package: *//p' "$d/BUILD-INFO.txt")"
+              ver="$(sed -n 's/^new version: *//p' "$d/BUILD-INFO.txt")"
+              echo "| \`$t\` | \`$src\` | \`$ver\` |"
+            done
+            echo
+            echo "Install from the apt repository, or download a target tarball below and"
+            echo "verify it against \`SHA256SUMS\`. See the README for details."
+          } > release-notes.md
+      - name: GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" release/* --title "$GITHUB_REF_NAME" --notes-file release-notes.md
+      - name: Import signing key
+        env:
+          REPO_SIGNING_KEY: ${{ secrets.REPO_SIGNING_KEY }}
+        run: |
+          [ -n "$REPO_SIGNING_KEY" ] || { echo "REPO_SIGNING_KEY secret is not set" >&2; exit 1; }
+          echo "$REPO_SIGNING_KEY" | gpg --batch --import
+      - name: Build apt repository
+        run: |
+          sudo apt-get install -y --no-install-recommends apt-utils
+          repo/build-apt-repo.sh dist site "${{ vars.REPO_SIGNING_KEY_ID }}"
+          gpg --armor --export "${{ vars.REPO_SIGNING_KEY_ID }}" > site/debian-php-backports.asc
+          cp repo/index.html site/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  pages:
+    needs: publish
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

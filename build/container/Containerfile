@@ -1,0 +1,80 @@
+# Build environment for patched PHP packages on an archived Debian release.
+# Build context: build/container/
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+
+ARG APT_MIRROR
+ARG APT_SECURITY_MIRROR
+ARG APT_SECURITY_SUITE
+# e.g. "[trusted=yes]" for releases whose archive signing keys have expired (jessie)
+ARG APT_SOURCE_OPTIONS=""
+ARG DEBIAN_CODENAME
+ARG SOURCE_PACKAGE
+# If set, build dependencies come from this .dsc via mk-build-deps (package not in
+# the Debian release; apt 1.0 on jessie cannot build-dep from a .dsc itself)
+ARG BUILD_DEP_DSC_URL=""
+# Archive components (e.g. "main non-free" when a build-dep is non-free)
+ARG APT_COMPONENTS="main"
+# Extra apt.conf line, e.g. APT::Get::AllowUnauthenticated "true"; (apt < 0.8.16 has no [trusted=yes])
+ARG APT_EXTRA_CONF=""
+# Set to 1 where "dpkg --search" crashes in containers (squeeze); see dpkg-search-wrapper.sh
+ARG DPKG_SEARCH_WRAPPER=""
+# Optional backports suite and packages to install from it (e.g. newer debhelper)
+ARG APT_BACKPORTS_SUITE=""
+ARG BACKPORTS_PACKAGES=""
+# Optional extra .deb files (space separated URLs) installed before build-dep
+ARG EXTRA_DEB_URLS=""
+# Optional sed expression relaxing Build-Depends (applied to the dsc here and to
+# debian/control in the build), e.g. "s/libzip-dev (>= 1.0.0)/libzip-dev/"
+ARG CONTROL_SED=""
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Archived releases: no -updates suite on archive.debian.org, Release files are expired.
+RUN printf '%s\n' \
+        "deb ${APT_SOURCE_OPTIONS} ${APT_MIRROR} ${DEBIAN_CODENAME} ${APT_COMPONENTS}" \
+        "deb-src ${APT_SOURCE_OPTIONS} ${APT_MIRROR} ${DEBIAN_CODENAME} ${APT_COMPONENTS}" \
+        "deb ${APT_SOURCE_OPTIONS} ${APT_SECURITY_MIRROR} ${APT_SECURITY_SUITE} ${APT_COMPONENTS}" \
+        "deb-src ${APT_SOURCE_OPTIONS} ${APT_SECURITY_MIRROR} ${APT_SECURITY_SUITE} ${APT_COMPONENTS}" \
+        > /etc/apt/sources.list \
+    && if [ -n "${APT_BACKPORTS_SUITE}" ]; then printf '%s\n' \
+        "deb ${APT_SOURCE_OPTIONS} ${APT_MIRROR} ${APT_BACKPORTS_SUITE} ${APT_COMPONENTS}" \
+        "deb-src ${APT_SOURCE_OPTIONS} ${APT_MIRROR} ${APT_BACKPORTS_SUITE} ${APT_COMPONENTS}" \
+        >> /etc/apt/sources.list; fi \
+    && rm -f /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources \
+    && echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99archive \
+    && if [ -n "${APT_EXTRA_CONF}" ]; then echo "${APT_EXTRA_CONF}" >> /etc/apt/apt.conf.d/99archive; fi
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential devscripts equivs fakeroot quilt dpkg-dev curl ca-certificates lsb-release \
+    && if [ -n "${BACKPORTS_PACKAGES}" ]; then \
+           apt-get install -y --no-install-recommends -t "${APT_BACKPORTS_SUITE}" ${BACKPORTS_PACKAGES}; \
+       fi \
+    && for url in ${EXTRA_DEB_URLS}; do \
+           curl -fsSL -o /tmp/extra.deb "$url" && dpkg -i /tmp/extra.deb || apt-get install -f -y; \
+           rm -f /tmp/extra.deb; \
+       done \
+    && if [ -n "${BUILD_DEP_DSC_URL}" ]; then \
+           curl -fsSL -o /tmp/build-dep.dsc "${BUILD_DEP_DSC_URL}" \
+           && sed -i -e '/^-----BEGIN PGP SIGNED MESSAGE-----/,/^$/d' -e '/^-----BEGIN PGP SIGNATURE-----/,$d' /tmp/build-dep.dsc \
+           && if [ -n "${CONTROL_SED}" ]; then sed -i -e "${CONTROL_SED}" /tmp/build-dep.dsc; fi \
+           && mk-build-deps -i -r -t 'apt-get -y --no-install-recommends' /tmp/build-dep.dsc \
+           && rm -f /tmp/build-dep.dsc; \
+       else \
+           apt-get build-dep -y "${SOURCE_PACKAGE}"; \
+       fi \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN useradd --uid 1000 --create-home --shell /bin/bash builder \
+    && mkdir -p /build /out \
+    && chown builder:builder /build /out
+
+COPY build-in-container.sh /usr/local/bin/build-in-container.sh
+COPY dpkg-search-wrapper.sh /usr/local/lib/dpkg-search-wrapper.sh
+RUN if [ "${DPKG_SEARCH_WRAPPER}" = "1" ]; then cp /usr/local/lib/dpkg-search-wrapper.sh /usr/local/bin/dpkg; fi
+
+USER builder
+WORKDIR /build
+ENTRYPOINT ["/usr/local/bin/build-in-container.sh"]

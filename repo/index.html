@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>debian-php-backports</title>
+<style>
+  body { font: 16px/1.5 system-ui, sans-serif; max-width: 46rem; margin: 2rem auto; padding: 0 1rem; color: #222; background: #fff; }
+  code, pre { font-family: ui-monospace, monospace; background: #f3f3f3; }
+  pre { padding: .75rem; overflow-x: auto; }
+  @media (prefers-color-scheme: dark) { body { color: #ddd; background: #111; } code, pre { background: #222; } }
+</style>
+</head>
+<body>
+<h1>debian-php-backports</h1>
+<p>apt repository with PHP security fixes for archived Debian releases.</p>
+<pre>curl -fsSL https://animaartificialis.github.io/debian-php-backports/debian-php-backports.asc \
+  | gpg --dearmor -o /usr/share/keyrings/debian-php-backports.gpg
+echo "deb [signed-by=/usr/share/keyrings/debian-php-backports.gpg] https://animaartificialis.github.io/debian-php-backports stretch debian" \
+  &gt; /etc/apt/sources.list.d/debian-php-backports.list</pre>
+<p>Suites, components and older releases are described in the
+<a href="https://github.com/animaartificialis/debian-php-backports#readme">README</a>.
+Signing key: <a href="debian-php-backports.asc">debian-php-backports.asc</a>.</p>
+</body>
+</html>
