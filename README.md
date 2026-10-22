@@ -88,6 +88,15 @@ apt-get update && apt-get upgrade
 
 Replace the codename and the component (`debian`, `sury`, `debian7`) to match the table.
 
+If `apt-get upgrade` says the PHP packages "have been kept back", the new packages need
+a package you do not have yet (for example, Sury's `php-common` needs `psmisc` and
+recommends `cron`). `apt-get upgrade` never installs new packages. Upgrade PHP like this
+instead:
+
+```sh
+apt-get install --only-upgrade 'php*'
+```
+
 The repository is served over HTTPS only. Wheezy and jessie need `apt-transport-https`
 and reasonably current CA certificates. Squeeze cannot use it at all: its OpenSSL 0.9.8
 does not speak TLS 1.2. On squeeze, use the release tarballs below.
