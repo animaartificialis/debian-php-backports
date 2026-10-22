@@ -61,16 +61,22 @@ The apt component says where the source comes from, and therefore what adding it
 - **`debian`** — the PHP version the release itself shipped, rebuilt from the last
   official Debian source with the fix added. A drop-in replacement: `apt-get upgrade`
   replaces only packages you already have, with the same version plus the fix.
-  This is what most servers want. Stretch and buster have no `debian` component: their
-  own PHP is fixed in [Freexian ELTS](https://www.freexian.com/lts/extended/docs/how-to-use-extended-lts/).
+  This is what most servers want. It adds only this fix to the last official source, not
+  the fixes released after it. On jessie, where the last Debian source is old, the `sury`
+  component has more fixes. Stretch and buster have no `debian` component: their own PHP
+  is fixed in [Freexian ELTS](https://www.freexian.com/lts/extended/docs/how-to-use-extended-lts/).
 - **`sury`** — Ondřej Surý's PHP packages (which already contain the fix), rebuilt for a
   release he no longer builds for. Use it if you already run his PHP version on that
   release. A few dependencies newer than the release has (Sury's `php-common`; on stretch
   `libpcre2` and `libargon2-1` from buster; on xenial `libpcre2`, `libargon2-0` and
-  `libtidy5` from bionic) ship in the same component.
+  `libtidy5` from bionic) ship in the same component. The rebuild keeps the same PHP
+  extension API (`phpapi-…`), so extension packages you installed from Ondřej earlier
+  (imagick, redis, apcu, …) keep working. Where his repository dropped the release, those
+  can no longer be installed new.
 - **`debian<N>`** — the PHP of a *newer* Debian release built for an older one (squeeze
   gets wheezy's PHP 5.4; squeeze itself shipped 5.3). Adding it upgrades PHP to that
-  version.
+  version. On squeeze, PECL extension packages built for PHP 5.3 (`phpapi-20090626`) are
+  removed by the upgrade, and `php5-suhosin` must be purged first. Use `apt-get dist-upgrade`.
 
 ## Installing
 
