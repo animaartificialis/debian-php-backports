@@ -151,14 +151,16 @@ apt-get update && apt-get upgrade
 Each target builds in a podman container of its own Debian release, from archived Debian
 or deb.sury.org sources pinned by SHA256:
 
-1. A builder image is created from `debian:<codename>-slim`, pointed at
-   archive.debian.org, with the source package's build dependencies installed.
+1. A builder image is created from the release's own base image (`debian:<codename>-slim`,
+   `debian/eol:squeeze`, or `ubuntu:<version>`), pointed at the release's archive
+   (archive.debian.org for Debian), with the source package's build dependencies installed.
 2. The source package is downloaded and its `.dsc` checksum verified.
-3. For `debian` targets, Sury's fix is added to `debian/patches/series` (the patch files
+3. For `debian` targets, Sury's fixes are added to `debian/patches/series` (the patch files
    are committed under `targets/*/patches/`, with their origin in `SOURCE.md`).
    `sury` targets use Sury's source package as it is.
-4. The version gets the `+animaa1` suffix so it sorts above the version it was built
-   from, and the packages are built with `dpkg-buildpackage`.
+4. The version gets an `+animaaN` suffix (`+animaa1`, raised on each rebuild of the same
+   source) so it sorts above the version it was built from, and the packages are built
+   with `dpkg-buildpackage`.
 5. An install test, in a clean container of the same release, installs the built
    packages — over the stock ones where the release has them — and runs PHP.
 
