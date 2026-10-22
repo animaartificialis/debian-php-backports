@@ -60,7 +60,8 @@ The apt component says where the source comes from, and therefore what adding it
 - **`debian`** — the PHP version the release itself shipped, rebuilt from the last
   official Debian source with the fix added. A drop-in replacement: `apt-get upgrade`
   replaces only packages you already have, with the same version plus the fix.
-  This is what most servers want.
+  This is what most servers want. Stretch and buster have no `debian` component: their
+  own PHP is fixed in [Freexian ELTS](https://www.freexian.com/lts/extended/docs/how-to-use-extended-lts/).
 - **`sury`** — Ondřej Surý's PHP packages (which already contain the fix), rebuilt for a
   release he no longer builds for. Use it if you already run his PHP version on that
   release. A few dependencies newer than the release has (Sury's `php-common`, and on
