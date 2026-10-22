@@ -98,8 +98,8 @@ jobs:
       - name: Build apt repository
         run: |
           sudo apt-get install -y --no-install-recommends apt-utils
-          repo/build-apt-repo.sh dist site "${{ vars.REPO_SIGNING_KEY_ID }}"
-          gpg --armor --export "${{ vars.REPO_SIGNING_KEY_ID }}" > site/debian-php-backports.asc
+          repo/build-apt-repo.sh dist site 32E998308C448BF6CC57BD7BFEE348611F66C3D6
+          cp repo/debian-php-backports.asc site/
           cp repo/index.html site/
       - uses: actions/upload-pages-artifact@v3
         with:

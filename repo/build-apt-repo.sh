@@ -48,6 +48,10 @@ for codename in "${!COMPONENTS[@]}"; do
         apt-ftparchive packages "pool/$codename/$comp" > "$bin/Packages"
         gzip -9nk -f "$bin/Packages"
     done
+    # Write Release outside the tree: redirecting straight into dists/<codename>/Release
+    # creates it before apt-ftparchive scans the directory, which then lists the
+    # half-written Release (and any old InRelease/Release.gpg) among the hashed files.
+    rm -f "dists/$codename/Release" "dists/$codename/InRelease" "dists/$codename/Release.gpg"
     apt-ftparchive \
         -o APT::FTPArchive::Release::Origin="debian-php-backports" \
         -o APT::FTPArchive::Release::Label="debian-php-backports" \
@@ -55,9 +59,9 @@ for codename in "${!COMPONENTS[@]}"; do
         -o APT::FTPArchive::Release::Codename="$codename" \
         -o APT::FTPArchive::Release::Architectures="$ARCH" \
         -o APT::FTPArchive::Release::Components="${comps% }" \
-        release "dists/$codename" > "dists/$codename/Release"
+        release "dists/$codename" > "$OUT/.Release.tmp"
+    mv "$OUT/.Release.tmp" "dists/$codename/Release"
     if [ -n "$KEY" ]; then
-        rm -f "dists/$codename/InRelease" "dists/$codename/Release.gpg"
         gpg --batch --yes --local-user "$KEY" --digest-algo SHA256 --clearsign \
             -o "dists/$codename/InRelease" "dists/$codename/Release"
         gpg --batch --yes --local-user "$KEY" --digest-algo SHA256 --armor --detach-sign \

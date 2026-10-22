@@ -48,7 +48,11 @@ The apt component says where the source comes from, and therefore what adding it
 
 ### apt repository
 
-Import the signing key and add the components you want. On stretch and buster:
+The repository is signed with a dedicated RSA 4096 key (`repo/debian-php-backports.asc`),
+fingerprint `32E9 9830 8C44 8BF6 CC57 BD7B FEE3 4861 1F66 C3D6`. RSA, because the `gpgv` of squeeze, wheezy and jessie cannot
+verify Ed25519 signatures.
+
+Import the key and add the components you want. On stretch and buster:
 
 ```sh
 curl -fsSL https://animaartificialis.github.io/debian-php-backports/debian-php-backports.asc \
