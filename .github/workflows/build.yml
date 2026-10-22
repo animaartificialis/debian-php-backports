@@ -46,7 +46,8 @@ jobs:
 
   publish:
     # Only tagged releases are published; branch builds just prove the targets build.
-    if: startsWith(github.ref, 'refs/tags/v')
+    # Targets that failed are left out instead of blocking the ones that passed.
+    if: ${{ !cancelled() && startsWith(github.ref, 'refs/tags/v') }}
     needs: build
     runs-on: ubuntu-24.04
     permissions:
@@ -56,6 +57,8 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
+      - name: Require at least one built target
+        run: ls artifacts/*/ >/dev/null
       - name: Restore dist/<release>/<php> layout
         run: |
           for a in artifacts/*/; do
@@ -107,6 +110,7 @@ jobs:
 
   pages:
     needs: publish
+    if: ${{ !cancelled() && needs.publish.result == 'success' }}
     runs-on: ubuntu-24.04
     permissions:
       pages: write
