@@ -24,6 +24,10 @@ fi
 source "$REPO_ROOT/build/build.conf"
 # shellcheck source=/dev/null
 source "$TARGET_CONF"
+# Per-architecture mirror overrides from target.conf, e.g. APT_MIRROR_arm64 (Ubuntu keeps
+# everything but amd64/i386 on ports.ubuntu.com).
+v="APT_MIRROR_$ARCH"; APT_MIRROR="${!v:-$APT_MIRROR}"
+v="APT_SECURITY_MIRROR_$ARCH"; APT_SECURITY_MIRROR="${!v:-$APT_SECURITY_MIRROR}"
 
 if ! compgen -G "$DIST_DIR/*.deb" > /dev/null; then
     echo "ERROR: no .deb files in $DIST_DIR; run 'make build-$TARGET' first" >&2

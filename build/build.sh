@@ -51,6 +51,10 @@ if [[ " ${ARCHES:-amd64} " != *" $ARCH "* ]]; then
     exit 1
 fi
 DIST_ROOT=dist; [ "$ARCH" = amd64 ] || DIST_ROOT="dist-$ARCH"
+# Per-architecture mirror overrides from target.conf, e.g. APT_MIRROR_arm64 (Ubuntu keeps
+# everything but amd64/i386 on ports.ubuntu.com).
+v="APT_MIRROR_$ARCH"; APT_MIRROR="${!v:-$APT_MIRROR}"
+v="APT_SECURITY_MIRROR_$ARCH"; APT_SECURITY_MIRROR="${!v:-$APT_SECURITY_MIRROR}"
 
 IMAGE="php-backport-builder:${TARGET//\//-}-$ARCH"
 DIST_DIR="$REPO_ROOT/$DIST_ROOT/$TARGET"
