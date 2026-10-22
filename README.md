@@ -6,6 +6,10 @@ PHP packages with security fixes for Debian releases that no longer receive them
 > On Debian 11 bullseye and newer, use [deb.sury.org](https://deb.sury.org/) instead —
 > it builds every PHP version for supported releases and gets fixes first. Nothing
 > here is built for, or should be installed on, a supported release.
+>
+> The one Ubuntu target, **Ubuntu 20.04 focal** (PHP 5.6 and 7.4), exists for the same
+> reason: the ondrej/php PPA dropped focal when its standard support ended. Focal's own
+> PHP 7.4.3 is still patched by Canonical through Ubuntu Pro (ESM).
 
 [deb.sury.org](https://deb.sury.org/) builds PHP — including old PHP versions — but only for
 Debian and Ubuntu releases that are still supported. Servers running an archived Debian
@@ -30,6 +34,8 @@ out-of-memory bailout; [advisory](https://github.com/php/php-src/security/adviso
 | Debian 9 stretch | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+debian9~1+animaa1` |
 | Debian 10 buster | 7.3 | `debian` | Debian 10 | `php7.3` | `7.3.31-1~deb10u7+animaa1` |
 | Debian 10 buster | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+debian10~1+animaa1` |
+| Ubuntu 20.04 focal | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-104+0~20261021.134+ubuntu20.04~1+animaa1` |
+| Ubuntu 20.04 focal | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+ubuntu20.04~1+animaa1` |
 
 Only `amd64` is built.
 
@@ -57,7 +63,7 @@ The repository is signed with a dedicated RSA 4096 key (`repo/debian-php-backpor
 fingerprint `32E9 9830 8C44 8BF6 CC57 BD7B FEE3 4861 1F66 C3D6`. RSA, because the `gpgv` of squeeze, wheezy and jessie cannot
 verify Ed25519 signatures.
 
-Import the key and add the components you want. On stretch and buster:
+Import the key and add the components you want. On stretch, buster and focal:
 
 ```sh
 curl -fsSL https://animaartificialis.github.io/debian-php-backports/debian-php-backports.asc \
