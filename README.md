@@ -34,18 +34,18 @@ out-of-memory bailout; [advisory](https://github.com/php/php-src/security/adviso
 | Debian 6 squeeze | 5.4 | `debian7` | Debian 7 | `php5` | `5.4.45-1+animaa1~squeeze` |
 | Debian 7 wheezy | 5.4 | `debian` | Debian 7 | `php5` | `5.4.45-0+deb7u14+animaa1` |
 | Debian 8 jessie | 5.6 | `debian` | Debian 8 | `php5` | `5.6.40+dfsg-0+deb8u12+animaa1` |
-| Debian 8 jessie | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-104+0~20261021.134+debian8~1+animaa1` |
-| Debian 8 jessie | 7.1 | `sury` | deb.sury.org | `php7.1` | `7.1.33-80+0~20261021.127+debian8~1+animaa1` |
-| Debian 9 stretch | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-104+0~20261021.134+debian9~1+animaa1` |
+| Debian 8 jessie | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-105+0~20261022.135+debian8~1+animaa1` |
+| Debian 8 jessie | 7.1 | `sury` | deb.sury.org | `php7.1` | `7.1.33-81+0~20261022.128+debian8~1+animaa1` |
+| Debian 9 stretch | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-105+0~20261022.135+debian9~1+animaa1` |
 | Debian 9 stretch | 7.0 | — | not built here: use [Freexian ELTS](https://www.freexian.com/lts/extended/docs/how-to-use-extended-lts/) | `php7.0` | ELTS `7.0.33-0+deb9u26` |
 | Debian 9 stretch | 7.3 | `sury` | deb.sury.org | `php7.3` | `7.3.33-35+0~20261021.144+debian9~1+animaa1` |
 | Debian 9 stretch | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+debian9~1+animaa1` |
 | Debian 10 buster | 7.3 | — | not built here: use [Freexian ELTS](https://www.freexian.com/lts/extended/docs/how-to-use-extended-lts/) | `php7.3` | ELTS `7.3.31-1~deb10u16` |
 | Debian 10 buster | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+debian10~1+animaa1` |
-| Ubuntu 18.04 bionic | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-104+0~20261021.134+ubuntu18.04~1+animaa1` |
+| Ubuntu 18.04 bionic | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-105+0~20261022.135+ubuntu18.04~1+animaa1` |
 | Ubuntu 18.04 bionic | 7.2 | `sury` | deb.sury.org | `php7.2` | `7.2.34-66+0~20261021.122+ubuntu18.04~1+animaa1` |
 | Ubuntu 18.04 bionic | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+ubuntu18.04~1+animaa1` |
-| Ubuntu 20.04 focal | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-104+0~20261021.134+ubuntu20.04~1+animaa1` |
+| Ubuntu 20.04 focal | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-105+0~20261022.135+ubuntu20.04~1+animaa1` |
 | Ubuntu 20.04 focal | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+ubuntu20.04~1+animaa1` |
 
 All targets are built for `amd64`. Three are also built for `arm64`: Debian 10 buster
