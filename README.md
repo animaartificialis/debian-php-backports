@@ -24,8 +24,19 @@ Debian and Ubuntu releases that are still supported. Servers running an archived
 get nothing from him. This repository covers what nobody else fixes: it rebuilds PHP for
 archived releases with the fixes applied, from sources you can check.
 
-Current fix: **CVE-2026-109618** and **CVE-2026-109619** ("PHP2Shell", RCE via
-out-of-memory bailout; [advisory](https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w)).
+Current fix: **CVE-2026-109618** and **CVE-2026-109619** ("PHP2Shell", remote code
+execution; advisories [GHSA-w8hw-w9fx-j79w](https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w)
+and [GHSA-6wmf-4rv5-p3rp](https://github.com/php/php-src/security/advisories/GHSA-6wmf-4rv5-p3rp)).
+
+All targets carry the PHP group's mitigation for end-of-life PHP versions, the same patch
+Ondřej ships ("Avoid state corruption via bailout"). It is not the full fix from PHP 8.2+,
+but it closes both problems in a simpler way:
+
+- On out of memory, the PHP process exits instead of continuing with broken state.
+- Error and request state is reset at the end of each request.
+- **Session upload progress is turned off** (`session.upload_progress` has no effect).
+  This removes one of the confirmed attack paths. If your application shows upload
+  progress bars, they stop working.
 
 ## Packages
 
