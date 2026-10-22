@@ -11,11 +11,18 @@ PHP packages with security fixes for Debian releases that no longer receive them
 > focal** (PHP 5.6, 7.4), exist for the same reason: the ondrej/php PPA dropped these
 > releases when their standard support ended. Their own PHP (bionic 7.2.24, focal 7.4.3)
 > is still patched by Canonical through Ubuntu Pro (ESM).
+>
+> **Debian 9 stretch and Debian 10 buster with their own PHP (7.0 and 7.3): use
+> [Freexian ELTS](https://www.freexian.com/lts/extended/docs/how-to-use-extended-lts/) first.** Its public repository already has the fix for
+> amd64 and more (buster also arm64), with more security fixes than a rebuild here would
+> have. The link explains how to add it to apt. ELTS is a service paid for by Freexian's
+> customers; the public repository comes with no guarantee. This repository does not
+> build these two.
 
 [deb.sury.org](https://deb.sury.org/) builds PHP — including old PHP versions — but only for
-Debian and Ubuntu releases that are still supported. Servers running an archived Debian
-release (squeeze to buster) get nothing. This repository covers those: it rebuilds PHP
-for archived releases with the fixes applied, from sources you can check.
+Debian and Ubuntu releases that are still supported. Servers running an archived release
+get nothing from him. This repository covers what nobody else fixes: it rebuilds PHP for
+archived releases with the fixes applied, from sources you can check.
 
 Current fix: **CVE-2026-109618** and **CVE-2026-109619** ("PHP2Shell", RCE via
 out-of-memory bailout; [advisory](https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w)).
@@ -30,10 +37,10 @@ out-of-memory bailout; [advisory](https://github.com/php/php-src/security/adviso
 | Debian 8 jessie | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-104+0~20261021.134+debian8~1+animaa1` |
 | Debian 8 jessie | 7.1 | `sury` | deb.sury.org | `php7.1` | `7.1.33-80+0~20261021.127+debian8~1+animaa1` |
 | Debian 9 stretch | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-104+0~20261021.134+debian9~1+animaa1` |
-| Debian 9 stretch | 7.0 | `debian` | Debian 9 | `php7.0` | `7.0.33-0+deb9u12+animaa1` |
+| Debian 9 stretch | 7.0 | — | not built here: use [Freexian ELTS](https://www.freexian.com/lts/extended/docs/how-to-use-extended-lts/) | `php7.0` | ELTS `7.0.33-0+deb9u26` |
 | Debian 9 stretch | 7.3 | `sury` | deb.sury.org | `php7.3` | `7.3.33-35+0~20261021.144+debian9~1+animaa1` |
 | Debian 9 stretch | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+debian9~1+animaa1` |
-| Debian 10 buster | 7.3 | `debian` | Debian 10 | `php7.3` | `7.3.31-1~deb10u7+animaa1` |
+| Debian 10 buster | 7.3 | — | not built here: use [Freexian ELTS](https://www.freexian.com/lts/extended/docs/how-to-use-extended-lts/) | `php7.3` | ELTS `7.3.31-1~deb10u16` |
 | Debian 10 buster | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+debian10~1+animaa1` |
 | Ubuntu 18.04 bionic | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-104+0~20261021.134+ubuntu18.04~1+animaa1` |
 | Ubuntu 18.04 bionic | 7.2 | `sury` | deb.sury.org | `php7.2` | `7.2.34-66+0~20261021.122+ubuntu18.04~1+animaa1` |
@@ -75,7 +82,7 @@ Import the key and add the components you want. On stretch, buster, bionic and f
 ```sh
 curl -fsSL https://animaartificialis.github.io/debian-php-backports/debian-php-backports.asc \
   | gpg --dearmor -o /usr/share/keyrings/debian-php-backports.gpg
-echo "deb [signed-by=/usr/share/keyrings/debian-php-backports.gpg] https://animaartificialis.github.io/debian-php-backports stretch debian" \
+echo "deb [signed-by=/usr/share/keyrings/debian-php-backports.gpg] https://animaartificialis.github.io/debian-php-backports buster sury" \
   > /etc/apt/sources.list.d/debian-php-backports.list
 apt-get update && apt-get upgrade
 ```
@@ -113,7 +120,7 @@ Check it against `SHA256SUMS` and either install the packages with `dpkg -i`, or
 it and use it as a local repository (squeeze: use `dpkg -i`, its apt has no `[trusted=yes]`):
 
 ```sh
-echo "deb [trusted=yes] file:/srv/debian-php-backports/debian9-stretch/php7.0-debian ./" \
+echo "deb [trusted=yes] file:/srv/debian-php-backports/debian8-jessie/php5.6-debian ./" \
   > /etc/apt/sources.list.d/debian-php-backports.list
 apt-get update && apt-get upgrade
 ```
@@ -150,7 +157,7 @@ Requires podman.
 
 ```sh
 make list                                  # all targets
-make build-debian9-stretch/php7.0-debian   # packages land in dist/debian9-stretch/php7.0-debian/
+make build-debian8-jessie/php5.6-debian    # packages land in dist/debian8-jessie/php5.6-debian/
 make test                                  # install test of everything built
 ```
 

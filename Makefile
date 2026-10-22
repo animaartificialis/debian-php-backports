@@ -1,4 +1,4 @@
-# Targets are named <release>/<php>, e.g. debian10-buster/php7.3-debian.
+# Targets are named <release>/<php>, e.g. debian8-jessie/php5.6-debian.
 TARGETS := $(shell cd targets && find . -mindepth 2 -maxdepth 2 -type d -printf '%P\n' | sort -V)
 
 .PHONY: help list test

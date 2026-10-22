@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Host driver: build the builder image and/or the patched PHP packages for a target.
-# Usage: build/build.sh <release>/<php> [image|build|all], e.g. debian10-buster/php7.3-debian
+# Usage: build/build.sh <release>/<php> [image|build|all], e.g. debian8-jessie/php5.6-debian
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"

@@ -6,7 +6,7 @@
 # (e.g. dist/debian9-stretch/php7.3-sury/*.deb). Each Debian codename becomes a
 # suite and the origin part of the PHP directory becomes the component:
 #
-#   debian9-stretch/php7.0-debian  ->  suite stretch, component debian
+#   debian8-jessie/php5.6-debian   ->  suite jessie, component debian
 #   debian9-stretch/php7.3-sury    ->  suite stretch, component sury
 #   debian6-squeeze/php5.4-debian7 ->  suite squeeze, component debian7
 #
