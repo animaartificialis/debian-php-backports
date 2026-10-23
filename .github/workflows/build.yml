@@ -1,10 +1,14 @@
 name: build
 
 on:
+  # Changes to documentation alone do not need a full build. Path filters are not used for
+  # tags, so a release tag always builds.
   push:
     branches: [main]
     tags: ['v*']
+    paths-ignore: ['**.md', 'LICENSE', 'repo/index.html']
   pull_request:
+    paths-ignore: ['**.md', 'LICENSE', 'repo/index.html']
   workflow_dispatch:
 
 jobs:

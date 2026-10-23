@@ -219,8 +219,9 @@ revisions from his pool. A scheduled workflow (`.github/workflows/sury-watch.yml
 hours) runs `repo/check-sury-updates.py`, which compares the pinned revisions with Sury's
 index and opens an issue labelled `sury-update` when a newer revision exists. Updates that
 an open or closed issue already mentions are not reported again; a newer revision found
-while an issue is open is added to it as a comment. The script also runs locally:
-`repo/check-sury-updates.py --dry-run`.
+while an issue is open is added to it as a comment. It also opens an issue when Sury
+stops building for bullseye, the last Debian release this README sends to him. The script
+also runs locally: `repo/check-sury-updates.py --dry-run`.
 
 ## License
 

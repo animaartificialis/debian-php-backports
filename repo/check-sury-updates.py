@@ -18,6 +18,11 @@ The rules, so that nobody gets spammed when an issue sits for weeks:
 - Any error while reading Sury's index or the issues stops the run before anything
   is created or changed.
 
+It also watches the releases for which the README sends people to deb.sury.org
+(WATCHED_RELEASES). When Sury's suite for one of them is gone, or has not changed for
+STALE_DAYS, it opens one issue (marker `<!-- sury-dropped: RELEASE -->`), so we can decide
+whether to build for that release here.
+
 For testing: --dry-run prints the planned action instead of calling gh, --targets DIR
 reads pins from another directory, --issues FILE takes the issues from a JSON file
 (same shape as `gh issue list --json number,state,body,comments`), and
@@ -27,11 +32,14 @@ in the title and text.
 """
 
 import argparse
+import email.utils
 import gzip
 import json
 import re
 import subprocess
 import sys
+import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -39,6 +47,10 @@ ROOT = Path(__file__).resolve().parent.parent
 SOURCES_URL = "https://packages.sury.org/php/dists/bookworm/main/source/Sources.gz"
 LABEL = "sury-update"
 MARKER = re.compile(r"<!-- sury-update: (\S+) (\S+) -->")
+DROPPED = re.compile(r"<!-- sury-dropped: (\S+) -->")
+# Releases the README sends to deb.sury.org; Sury has said he will stop building bullseye.
+WATCHED_RELEASES = ["bullseye"]
+STALE_DAYS = 30
 
 
 def revision(version):
@@ -83,6 +95,27 @@ def read_sury(packages):
     return found
 
 
+def dropped_releases():
+    """Watched releases whose Sury suite is gone or has not changed for STALE_DAYS."""
+    dropped = []
+    for rel in WATCHED_RELEASES:
+        url = f"https://packages.sury.org/php/dists/{rel}/Release"
+        try:
+            with urllib.request.urlopen(url, timeout=60) as r:
+                head = r.read(4096).decode("utf-8", "replace")
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                dropped.append((rel, "the suite is gone"))
+                continue
+            raise
+        date = re.search(r"^Date: (.+)$", head, re.M)
+        if date:
+            age = (time.time() - email.utils.parsedate_to_datetime(date.group(1)).timestamp()) / 86400
+            if age > STALE_DAYS:
+                dropped.append((rel, f"the suite has not changed for {int(age)} days"))
+    return dropped
+
+
 def find_updates(pins, sury):
     """[(package, [old revision, ...], new revision, [target, ...]), ...]"""
     updates = []
@@ -121,6 +154,28 @@ def format_updates(updates):
     return "\n".join(lines)
 
 
+def report_dropped(dropped, issues, dry_run):
+    """One issue per dropped release, unless any issue already carries its marker."""
+    known = set()
+    for issue in issues:
+        texts = [issue.get("body") or ""] + [c.get("body") or "" for c in issue.get("comments") or []]
+        known.update(DROPPED.findall("\n".join(texts)))
+    for rel, why in dropped:
+        if rel in known:
+            print(f"{rel}: already reported in an issue")
+            continue
+        title = f"deb.sury.org stopped building for {rel}"
+        body = (f"Sury's `{rel}` suite on packages.sury.org: {why}. The README sends `{rel}` users "
+                "to deb.sury.org, so check whether to build PHP for it here (first release he no "
+                "longer covers) and update the README.\n\n"
+                f"<!-- sury-dropped: {rel} -->")
+        print(f"plan: create issue '{title}'\n\n{body}\n")
+        if not dry_run:
+            gh("label", "create", LABEL, "--force", "--color", "D93F0B",
+               "--description", "Newer revision of a pinned deb.sury.org source")
+            gh("issue", "create", "--label", LABEL, "--title", title, "--body-file", "-", stdin=body)
+
+
 def gh(*args, stdin=None):
     return subprocess.run(["gh", *args], input=stdin, text=True, check=True,
                           stdout=subprocess.PIPE).stdout
@@ -151,7 +206,13 @@ def main():
     updates = find_updates(pins, sury)
     for pkg, old, new, targets in updates:
         print(f"update: {pkg} {', '.join(old)} -> {new} ({', '.join(targets)})")
-    if not updates:
+    try:
+        dropped = dropped_releases()
+    except OSError as e:
+        sys.exit(f"cannot read Sury's suites: {e}")
+    for rel, why in dropped:
+        print(f"dropped: {rel} ({why})")
+    if not updates and not dropped:
         print("all pins are current")
         return
 
@@ -160,6 +221,9 @@ def main():
     else:
         issues = json.loads(gh("issue", "list", "--label", LABEL, "--state", "all", "--limit", "500",
                                "--json", "number,state,body,comments"))
+    report_dropped(dropped, issues, args.dry_run)
+    if not updates:
+        return
     action, *rest = decide(updates, issues)
 
     if action == "nothing":
