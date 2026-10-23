@@ -6,7 +6,7 @@ name: sury-watch
 
 on:
   schedule:
-    - cron: '23 */6 * * *'
+    - cron: '23 */8 * * *'
   workflow_dispatch:
 
 permissions:
@@ -16,8 +16,14 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     steps:
+      # Only the pins and the script are needed: a shallow, sparse checkout keeps the run short.
       - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            targets
+            repo
       - name: Compare the pinned revisions with deb.sury.org
         env:
           GH_TOKEN: ${{ github.token }}
