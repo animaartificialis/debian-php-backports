@@ -99,4 +99,8 @@ echo $out;
 # CVE-2023-0662: every target ships max_multipart_body_parts (ini_get() is false if unknown).
 "$TEST_PHP_BINARY" -r 'exit(ini_get("max_multipart_body_parts") === false ? 1 : 0);' \
     || fail "max_multipart_body_parts is not a known INI setting (CVE-2023-0662 fix missing)"
+
+# CVE-2026-109618 / CVE-2026-109619: verify zend_mm_safe_error_ex symbol is compiled into the binary.
+nm -D "$(command -v "$TEST_PHP_BINARY")" | grep -c zend_mm_safe_error_ex > /dev/null \
+    || fail "zend_mm_safe_error_ex symbol missing from $TEST_PHP_BINARY (CVE-2026-109618/109619 fix missing)"
 echo "OK (positive): patched package installed and working"

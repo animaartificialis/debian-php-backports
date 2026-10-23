@@ -17,7 +17,7 @@ ENV_VARS=(
 
 usage() {
     echo "Usage: $0 <release>/<php> [image|build|all]" >&2
-    echo "Available targets: $(cd "$REPO_ROOT/targets" && find . -mindepth 2 -maxdepth 2 -type d -printf '%P\n' | sort -V | tr '\n' ' ')" >&2
+    echo "Available targets: $(cd "$REPO_ROOT/targets" && find . -mindepth 2 -maxdepth 2 -type d | sed 's|^\./||' | sort -V | tr '\n' ' ')" >&2
     exit 1
 }
 
@@ -65,9 +65,15 @@ detect_arch() {
     fi
 }
 
-# Packages are built natively for the host architecture. amd64 output goes to dist/,
-# any other architecture to dist-<arch>/, so the amd64 layout stays as it was.
-ARCH="${ARCH:-$(detect_arch)}"
+# Packages are built natively for the host architecture (or fallback to first target arch).
+# amd64 output goes to dist/, any other architecture to dist-<arch>/, so the amd64 layout stays as it was.
+if [ -z "${ARCH:-}" ]; then
+    ARCH="$(detect_arch)"
+    if [[ " ${ARCHES:-amd64} " != *" $ARCH "* ]]; then
+        ARCH="${ARCHES:-amd64}"
+        ARCH="${ARCH%% *}"
+    fi
+fi
 if [[ " ${ARCHES:-amd64} " != *" $ARCH "* ]]; then
     echo "ERROR: target '$TARGET' is not built for $ARCH (ARCHES=\"${ARCHES:-amd64}\")" >&2
     exit 1

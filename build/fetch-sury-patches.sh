@@ -13,7 +13,7 @@ TARGET="${1%/}"
 TARGET_DIR="$REPO_ROOT/targets/$TARGET"
 if [ ! -f "$TARGET_DIR/target.conf" ]; then
     echo "ERROR: unknown target '$TARGET' ($TARGET_DIR/target.conf not found)" >&2
-    echo "Available targets: $(cd "$REPO_ROOT/targets" && find . -mindepth 2 -maxdepth 2 -type d -printf '%P\n' | sort -V | tr '\n' ' ')" >&2
+    echo "Available targets: $(cd "$REPO_ROOT/targets" && find . -mindepth 2 -maxdepth 2 -type d | sed 's|^\./||' | sort -V | tr '\n' ' ')" >&2
     exit 1
 fi
 # shellcheck source=/dev/null

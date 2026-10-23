@@ -12,6 +12,15 @@ if [ $# -ne 1 ]; then
 fi
 TARGET="${1%/}"
 TARGET_CONF="$REPO_ROOT/targets/$TARGET/target.conf"
+if [ ! -f "$TARGET_CONF" ]; then
+    echo "ERROR: unknown target '$TARGET' ($TARGET_CONF not found)" >&2
+    exit 1
+fi
+# shellcheck source=/dev/null
+source "$REPO_ROOT/build/build.conf"
+# shellcheck source=/dev/null
+source "$TARGET_CONF"
+
 # Container engine: prefer podman if available, otherwise docker.
 CONTAINER_CLI="${CONTAINER_CLI:-$(command -v podman 2>/dev/null || command -v docker 2>/dev/null || true)}"
 if [ -z "$CONTAINER_CLI" ]; then
@@ -34,7 +43,13 @@ detect_arch() {
     fi
 }
 
-ARCH="${ARCH:-$(detect_arch)}"
+if [ -z "${ARCH:-}" ]; then
+    ARCH="$(detect_arch)"
+    if [[ " ${ARCHES:-amd64} " != *" $ARCH "* ]]; then
+        ARCH="${ARCHES:-amd64}"
+        ARCH="${ARCH%% *}"
+    fi
+fi
 DIST_ROOT=dist; [ "$ARCH" = amd64 ] || DIST_ROOT="dist-$ARCH"
 DIST_DIR="$REPO_ROOT/$DIST_ROOT/$TARGET"
 
@@ -45,14 +60,6 @@ elif [ "$ARCH" = "arm64" ]; then
     PLATFORM_ARG=(--platform linux/arm64)
 fi
 
-if [ ! -f "$TARGET_CONF" ]; then
-    echo "ERROR: unknown target '$TARGET' ($TARGET_CONF not found)" >&2
-    exit 1
-fi
-# shellcheck source=/dev/null
-source "$REPO_ROOT/build/build.conf"
-# shellcheck source=/dev/null
-source "$TARGET_CONF"
 # Per-architecture mirror overrides from target.conf, e.g. APT_MIRROR_arm64 (Ubuntu keeps
 # everything but amd64/i386 on ports.ubuntu.com).
 v="APT_MIRROR_$ARCH"; APT_MIRROR="${!v:-$APT_MIRROR}"
