@@ -8,6 +8,11 @@ on:
   schedule:
     - cron: '23 */8 * * *'
   workflow_dispatch:
+    inputs:
+      simulate:
+        description: 'Testing only: pretend older pins, e.g. "php7.2=7.2.34-65" (space separated)'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -27,4 +32,5 @@ jobs:
       - name: Compare the pinned revisions with deb.sury.org
         env:
           GH_TOKEN: ${{ github.token }}
-        run: repo/check-sury-updates.py
+          SIMULATE: ${{ inputs.simulate }}
+        run: repo/check-sury-updates.py $(for s in $SIMULATE; do printf -- '--simulate %s ' "$s"; done)

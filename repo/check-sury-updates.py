@@ -19,8 +19,11 @@ The rules, so that nobody gets spammed when an issue sits for weeks:
   is created or changed.
 
 For testing: --dry-run prints the planned action instead of calling gh, --targets DIR
-reads pins from another directory, and --issues FILE takes the issues from a JSON
-file (same shape as `gh issue list --json number,state,body,comments`).
+reads pins from another directory, --issues FILE takes the issues from a JSON file
+(same shape as `gh issue list --json number,state,body,comments`), and
+--simulate PACKAGE=REVISION pretends that all targets of PACKAGE pin REVISION, so the
+whole path, including real issues, can be tried. Issues from a simulated run say so
+in the title and text.
 """
 
 import argparse
@@ -128,9 +131,17 @@ def main():
     ap.add_argument("--dry-run", action="store_true", help="print the planned action, do not call gh")
     ap.add_argument("--targets", type=Path, default=ROOT / "targets", help="directory with the targets")
     ap.add_argument("--issues", type=Path, help="JSON file with issues instead of asking GitHub")
+    ap.add_argument("--simulate", action="append", default=[], metavar="PACKAGE=REVISION",
+                    help="pretend that all targets of PACKAGE pin REVISION (testing only)")
     args = ap.parse_args()
 
     pins = read_pins(args.targets)
+    for item in args.simulate:
+        pkg, _, rev = item.partition("=")
+        if pkg not in pins or not rev:
+            sys.exit(f"--simulate: unknown package or empty revision: {item!r}")
+        pins[pkg] = {rev: sorted(t for ts in pins[pkg].values() for t in ts)}
+    test = " [TEST, simulated pins: " + ", ".join(args.simulate) + "]" if args.simulate else ""
     if not pins:
         sys.exit(f"no Sury pins found under {args.targets}")
     try:
@@ -157,13 +168,14 @@ def main():
     text = format_updates(rest[-1])
     if action == "comment":
         number = rest[0]
-        body = "New revisions appeared on deb.sury.org since this issue was opened:\n\n" + text
+        body = "New revisions appeared on deb.sury.org since this issue was opened" + test + ":\n\n" + text
         print(f"plan: comment on issue #{number}\n\n{body}\n")
         if not args.dry_run:
             gh("issue", "comment", str(number), "--body-file", "-", stdin=body)
     else:
-        title = "Sury update: " + ", ".join(f"{pkg} {new}" for pkg, _, new, _ in rest[0])
-        body = ("deb.sury.org has newer revisions of sources pinned in `targets/`. Sury removes "
+        title = "Sury update: " + ", ".join(f"{pkg} {new}" for pkg, _, new, _ in rest[0]) + test
+        body = (("This is a test of the workflow; nothing needs to be done.\n\n" if test else "") +
+                "deb.sury.org has newer revisions of sources pinned in `targets/`. Sury removes "
                 "old revisions from his pool, so the listed targets will stop building until "
                 "their pins are updated. New revisions usually carry security fixes.\n\n" + text)
         print(f"plan: create issue '{title}'\n\n{body}\n")
