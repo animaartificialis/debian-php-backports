@@ -10,5 +10,6 @@ Changes:
 
 - built with debhelper 10 from xenial-backports (Sury's packaging needs >= 9.20160709),
 - the secure-DNS telemetry patch `0251` is dropped from the series,
-- shipped alongside: Sury's `php-common` 2:101, and from bionic `libtidy5` 5.2.0 (xenial
-  has only the 2009 libtidy-0.99). Built against modern tidy-html5 with patch `0053` preserved.
+- shipped alongside: Sury's `php-common` 2:101, and `libtidy5` 5.2.0 from bionic (xenial
+  has only the 2009 libtidy-0.99). Both depend only on glibc >= 2.14. Built against modern
+  tidy-html5 with patch `0053` preserved.
