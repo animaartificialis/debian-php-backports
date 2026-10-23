@@ -102,7 +102,8 @@ echo $out;
 
 # CVE-2026-109618 / CVE-2026-109619: verify zend_mm_safe_error_ex symbol is compiled into the binary.
 # grep -c, not grep -q: grep -q stops at the first match, nm gets SIGPIPE, and pipefail
-# turns the match into a failure (same trap as with zcat above).
-nm -D "$(command -v "$TEST_PHP_BINARY")" | grep -c zend_mm_safe_error_ex > /dev/null \
+# turns the match into a failure (same trap as with zcat above). -F -w: plain text, whole
+# word, so a longer symbol that merely starts the same does not count as the fix.
+nm -D "$(command -v "$TEST_PHP_BINARY")" | grep -Fwc zend_mm_safe_error_ex > /dev/null \
     || fail "zend_mm_safe_error_ex symbol missing from $TEST_PHP_BINARY (CVE-2026-109618/109619 fix missing)"
 echo "OK (positive): patched package installed and working"
