@@ -7,5 +7,5 @@ The `.dsc` SHA256 is pinned in `target.conf`.
 
 Changes:
 
-- the secure-DNS telemetry patch `0128` is dropped from the series,
+- the secure-DNS telemetry patch `0144` is dropped from the series,
 - shipped alongside: Sury's `php-common` 2:101 (focal has 2:75); everything else comes from focal itself.
