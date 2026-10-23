@@ -8,7 +8,7 @@ PHP packages with security fixes for Debian releases that no longer receive them
 > here is built for, or should be installed on, a supported release.
 >
 > The Ubuntu targets, **Ubuntu 16.04 xenial** (PHP 5.6, 7.3), **Ubuntu 18.04 bionic** (PHP 5.6,
-> 7.2, 7.4) and **Ubuntu 20.04 focal** (PHP 5.6, 7.4), exist for the same reason: the
+> 7.2, 7.4) and **Ubuntu 20.04 focal** (PHP 5.6, 7.2, 7.4), exist for the same reason: the
 > ondrej/php PPA dropped these releases when their standard support ended. Their own PHP
 > (xenial 7.0, bionic 7.2.24, focal 7.4.3) is still patched by Canonical through Ubuntu Pro (ESM).
 >
@@ -60,10 +60,11 @@ but it closes both problems in a simpler way:
 | Ubuntu 18.04 bionic | 7.2 | `sury` | deb.sury.org | `php7.2` | `7.2.34-66+0~20261021.122+ubuntu18.04~1+animaa1` |
 | Ubuntu 18.04 bionic | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+ubuntu18.04~1+animaa1` |
 | Ubuntu 20.04 focal | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-105+0~20261022.135+ubuntu20.04~1+animaa1` |
+| Ubuntu 20.04 focal | 7.2 | `sury` | deb.sury.org | `php7.4` | `1:7.2.34-66+0+animaa1` |
 | Ubuntu 20.04 focal | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+ubuntu20.04~1+animaa1` |
 
 All targets are built for `amd64`. Four are also built for `arm64`: Debian 10 buster
-PHP 5.6 and 7.4, and Ubuntu 20.04 focal PHP 5.6 and 7.4. These are the first releases that
+PHP 5.6 and 7.4, and Ubuntu 20.04 focal PHP 5.6, 7.2 and 7.4. These are the first releases that
 deb.sury.org no longer builds for. Older releases were rarely run on arm64, and buster's
 own PHP 7.3 already has an arm64 fix from [Freexian ELTS](https://www.freexian.com/lts/extended/).
 
