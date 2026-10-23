@@ -43,9 +43,31 @@ source "$TARGET_DIR/target.conf"
 # Space separated lists may be written over several lines in target.conf.
 EXTRA_DEB_URLS="$(echo ${EXTRA_DEB_URLS:-})"
 
+# Container engine: prefer podman if available, otherwise docker.
+CONTAINER_CLI="${CONTAINER_CLI:-$(command -v podman 2>/dev/null || command -v docker 2>/dev/null || true)}"
+if [ -z "$CONTAINER_CLI" ]; then
+    echo "ERROR: neither podman nor docker was found in PATH" >&2
+    exit 1
+fi
+CONTAINER_TYPE="$(basename "$CONTAINER_CLI")"
+
+detect_arch() {
+    if [ "$CONTAINER_TYPE" = "podman" ]; then
+        "$CONTAINER_CLI" info --format '{{.Host.Arch}}' 2>/dev/null || uname -m
+    else
+        local arch
+        arch="$("$CONTAINER_CLI" info --format '{{.Architecture}}' 2>/dev/null || uname -m)"
+        case "$arch" in
+            x86_64) echo "amd64" ;;
+            aarch64) echo "arm64" ;;
+            *) echo "$arch" ;;
+        esac
+    fi
+}
+
 # Packages are built natively for the host architecture. amd64 output goes to dist/,
 # any other architecture to dist-<arch>/, so the amd64 layout stays as it was.
-ARCH="${ARCH:-$(podman info --format '{{.Host.Arch}}')}"
+ARCH="${ARCH:-$(detect_arch)}"
 if [[ " ${ARCHES:-amd64} " != *" $ARCH "* ]]; then
     echo "ERROR: target '$TARGET' is not built for $ARCH (ARCHES=\"${ARCHES:-amd64}\")" >&2
     exit 1
@@ -60,9 +82,17 @@ IMAGE="php-backport-builder:${TARGET//\//-}-$ARCH"
 DIST_DIR="$REPO_ROOT/$DIST_ROOT/$TARGET"
 CACHE_DIR="$REPO_ROOT/cache/$TARGET"
 
+PLATFORM_ARG=()
+if [ "$ARCH" = "amd64" ]; then
+    PLATFORM_ARG=(--platform linux/amd64)
+elif [ "$ARCH" = "arm64" ]; then
+    PLATFORM_ARG=(--platform linux/arm64)
+fi
+
 build_image() {
-    echo "==> Building image $IMAGE from $BASE_IMAGE"
-    podman build \
+    echo "==> Building image $IMAGE from $BASE_IMAGE using $CONTAINER_TYPE ($ARCH)"
+    "$CONTAINER_CLI" build \
+        "${PLATFORM_ARG[@]}" \
         --build-arg BASE_IMAGE="$BASE_IMAGE" \
         --build-arg APT_MIRROR="$APT_MIRROR" \
         --build-arg APT_SECURITY_MIRROR="$APT_SECURITY_MIRROR" \
@@ -94,11 +124,20 @@ build_packages() {
         printf '%s=%s\n' "$var" "${!var:-}" >> "$env_file"
     done
 
-    echo "==> Building packages in $IMAGE (output: $DIST_DIR)"
-    # Map the calling user onto the image's builder user (uid 1000), whatever its
-    # own uid is; plain keep-id only works where the host user is uid 1000 too.
-    podman run --rm \
-        --userns=keep-id:uid=1000,gid=1000 \
+    echo "==> Building packages in $IMAGE using $CONTAINER_TYPE (output: $DIST_DIR)"
+    local run_opts=("${PLATFORM_ARG[@]}")
+    if [ "$CONTAINER_TYPE" = "podman" ]; then
+        # Map the calling user onto the image's builder user (uid 1000), whatever its
+        # own uid is; plain keep-id only works where the host user is uid 1000 too.
+        run_opts+=(--userns=keep-id:uid=1000,gid=1000)
+    else
+        # Older glibc / GNU Make 4.x has a known bug with jobserver pipes closing when
+        # file descriptor limits are set to 1048576 (default in Docker Desktop).
+        run_opts+=(--user 1000:1000 --ulimit nofile=1024:65536)
+    fi
+
+    "$CONTAINER_CLI" run --rm \
+        "${run_opts[@]}" \
         --env-file "$env_file" \
         -v "$TARGET_DIR:/target:ro" \
         -v "$REPO_ROOT/build/container/build-in-container.sh:/usr/local/bin/build-in-container.sh:ro" \

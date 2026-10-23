@@ -138,7 +138,7 @@ main() {
 
     step "Step 5: dpkg-buildpackage (DEB_BUILD_OPTIONS=$DEB_BUILD_OPTIONS)"
     export DEB_BUILD_OPTIONS
-    dpkg-buildpackage -us -uc -b -j"$(nproc)"
+    dpkg-buildpackage -us -uc -b
 
     step "Step 6: collect artifacts into $OUT_DIR"
     cd "$WORK_DIR"

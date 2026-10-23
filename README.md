@@ -7,7 +7,7 @@ PHP packages with security fixes for Debian releases that no longer receive them
 > it builds every PHP version for supported releases and gets fixes first. Nothing
 > here is built for, or should be installed on, a supported release.
 >
-> The Ubuntu targets, **Ubuntu 16.04 xenial** (PHP 7.3), **Ubuntu 18.04 bionic** (PHP 5.6,
+> The Ubuntu targets, **Ubuntu 16.04 xenial** (PHP 5.6, 7.3, 7.4), **Ubuntu 18.04 bionic** (PHP 5.6,
 > 7.2, 7.4) and **Ubuntu 20.04 focal** (PHP 5.6, 7.4), exist for the same reason: the
 > ondrej/php PPA dropped these releases when their standard support ended. Their own PHP
 > (xenial 7.0, bionic 7.2.24, focal 7.4.3) is still patched by Canonical through Ubuntu Pro (ESM).
@@ -40,7 +40,7 @@ but it closes both problems in a simpler way:
 
 ## Packages
 
-| Debian | PHP | Component | Source from | Source package | Version |
+| Distribution | PHP | Component | Source from | Source package | Version |
 |---|---|---|---|---|---|
 | Debian 6 squeeze | 5.4 | `debian7` | Debian 7 | `php5` | `5.4.45-1+animaa2~squeeze` |
 | Debian 7 wheezy | 5.4 | `debian` | Debian 7 | `php5` | `5.4.45-0+deb7u14+animaa2` |
@@ -53,7 +53,9 @@ but it closes both problems in a simpler way:
 | Debian 9 stretch | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+debian9~1+animaa1` |
 | Debian 10 buster | 7.3 | — | not built here: use [Freexian ELTS](https://www.freexian.com/lts/extended/docs/how-to-use-extended-lts/) | `php7.3` | ELTS `7.3.31-1~deb10u16` |
 | Debian 10 buster | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+debian10~1+animaa1` |
+| Ubuntu 16.04 xenial | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-105+0~20261022.135+ubuntu16.04~1+animaa1` |
 | Ubuntu 16.04 xenial | 7.3 | `sury` | deb.sury.org | `php7.3` | `7.3.33-35+0~20261021.144+ubuntu16.04~1+animaa1` |
+| Ubuntu 16.04 xenial | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+ubuntu16.04~1+animaa1` |
 | Ubuntu 18.04 bionic | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-105+0~20261022.135+ubuntu18.04~1+animaa1` |
 | Ubuntu 18.04 bionic | 7.2 | `sury` | deb.sury.org | `php7.2` | `7.2.34-66+0~20261021.122+ubuntu18.04~1+animaa1` |
 | Ubuntu 18.04 bionic | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+ubuntu18.04~1+animaa1` |
@@ -89,6 +91,25 @@ The apt component says where the source comes from, and therefore what adding it
   gets wheezy's PHP 5.4; squeeze itself shipped 5.3). Adding it upgrades PHP to that
   version. On squeeze, PECL extension packages built for PHP 5.3 (`phpapi-20090626`) are
   removed by the upgrade, and `php5-suhosin` must be purged first. Use `apt-get dist-upgrade`.
+
+### Verifying the fixes
+
+- **CVE-2023-0662** (`max_multipart_body_parts` DoS limit):
+  Check that the INI directive is recognized by PHP:
+  ```sh
+  php -i | grep -i max_multipart_body_parts
+  # Expected: max_multipart_body_parts => -1 => -1
+  ```
+- **CVE-2026-109618 & CVE-2026-109619** ("PHP2Shell" bailout / memory corruption mitigation):
+  The fix replaces vulnerable `zend_bailout()` calls with `zend_mm_safe_error_ex()`. Inspect the exported dynamic symbols in the binary:
+  ```sh
+  nm -D $(which php) | grep zend_mm_safe_error_ex
+  # Expected: ... T zend_mm_safe_error_ex
+  ```
+  Or check the string table for the explicit overflow handler:
+  ```sh
+  strings $(which php) | grep "String allocation overflow"
+  ```
 
 ## Installing
 
@@ -148,12 +169,12 @@ apt-get update && apt-get upgrade
 
 ## How it is built
 
-Each target builds in a podman container of its own Debian release, from archived Debian
+Each target builds in an OCI container (using **podman** or **docker**) of its own Debian or Ubuntu release, from archived Debian
 or deb.sury.org sources pinned by SHA256:
 
 1. A builder image is created from the release's own base image (`debian:<codename>-slim`,
    `debian/eol:squeeze`, or `ubuntu:<version>`), pointed at the release's archive
-   (archive.debian.org for Debian), with the source package's build dependencies installed.
+   (archive.debian.org for Debian, archive.ubuntu.com for Ubuntu), with the source package's build dependencies installed.
 2. The source package is downloaded and its `.dsc` checksum verified.
 3. For `debian` targets, Sury's fixes are added to `debian/patches/series` (the patch files
    are committed under `targets/*/patches/`, with their origin in `SOURCE.md`).
@@ -176,11 +197,13 @@ Two kinds of changes go beyond adding the fix, each recorded in the target's `SO
 
 ## Building it yourself
 
-Requires podman.
+Requires **podman** or **docker**.
 
 ```sh
 make list                                  # all targets
 make build-debian8-jessie/php5.6-debian    # packages land in dist/debian8-jessie/php5.6-debian/
+make build-ubuntu16.04-xenial/php5.6-sury  # builds Ubuntu 16.04 PHP 5.6
+make build-ubuntu16.04-xenial/php7.4-sury  # builds Ubuntu 16.04 PHP 7.4
 make test                                  # install test of everything built
 ```
 
