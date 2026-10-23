@@ -1,0 +1,36 @@
+name: sury-watch
+
+# Checks deb.sury.org for newer revisions of the sources pinned in targets/ and
+# reports them as issues with the `sury-update` label. The rules that keep it from
+# opening or commenting on issues again and again are in repo/check-sury-updates.py.
+
+on:
+  schedule:
+    - cron: '23 */8 * * *'
+  workflow_dispatch:
+    inputs:
+      simulate:
+        description: 'Testing only: pretend older pins, e.g. "php7.2=7.2.34-65" (space separated)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      # Only the pins and the script are needed: a shallow, sparse checkout keeps the run short.
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            targets
+            repo
+      - name: Compare the pinned revisions with deb.sury.org
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SIMULATE: ${{ inputs.simulate }}
+        run: repo/check-sury-updates.py $(for s in $SIMULATE; do printf -- '--simulate %s ' "$s"; done)

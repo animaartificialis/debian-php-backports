@@ -212,6 +212,16 @@ Layout: `targets/<release>/<php>-<origin>/target.conf` describes a target,
 `build/` holds the build scripts and the builder `Containerfile`, `repo/` builds the apt
 repository, `tests/` holds the install test.
 
+## Maintenance
+
+The `sury` targets pin deb.sury.org source packages by exact version, and Sury removes old
+revisions from his pool. A scheduled workflow (`.github/workflows/sury-watch.yml`, every eight
+hours) runs `repo/check-sury-updates.py`, which compares the pinned revisions with Sury's
+index and opens an issue labelled `sury-update` when a newer revision exists. Updates that
+an open or closed issue already mentions are not reported again; a newer revision found
+while an issue is open is added to it as a comment. The script also runs locally:
+`repo/check-sury-updates.py --dry-run`.
+
 ## License
 
 The build scripts are MIT licensed (see `LICENSE`). PHP and the patches keep their own
