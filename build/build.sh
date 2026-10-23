@@ -51,18 +51,20 @@ if [ -z "$CONTAINER_CLI" ]; then
 fi
 CONTAINER_TYPE="$(basename "$CONTAINER_CLI")"
 
+# Host architecture in Debian naming. podman already reports amd64/arm64; docker and the
+# uname fallback report x86_64/aarch64.
 detect_arch() {
+    local arch
     if [ "$CONTAINER_TYPE" = "podman" ]; then
-        "$CONTAINER_CLI" info --format '{{.Host.Arch}}' 2>/dev/null || uname -m
+        arch="$("$CONTAINER_CLI" info --format '{{.Host.Arch}}' 2>/dev/null || uname -m)"
     else
-        local arch
         arch="$("$CONTAINER_CLI" info --format '{{.Architecture}}' 2>/dev/null || uname -m)"
-        case "$arch" in
-            x86_64) echo "amd64" ;;
-            aarch64) echo "arm64" ;;
-            *) echo "$arch" ;;
-        esac
     fi
+    case "$arch" in
+        x86_64) echo "amd64" ;;
+        aarch64) echo "arm64" ;;
+        *) echo "$arch" ;;
+    esac
 }
 
 # Packages are built natively for the host architecture (or fallback to first target arch).

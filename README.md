@@ -102,14 +102,11 @@ The apt component says where the source comes from, and therefore what adding it
   # Expected: max_multipart_body_parts => -1 => -1
   ```
 - **CVE-2026-109618 & CVE-2026-109619** ("PHP2Shell" bailout / memory corruption mitigation):
-  The fix replaces vulnerable `zend_bailout()` calls with `zend_mm_safe_error_ex()`. Inspect the exported dynamic symbols in the binary:
+  The fix adds `zend_mm_safe_error_ex()` and routes allocation-overflow errors through it
+  instead of a bailout. Check that the symbol is exported by the binary:
   ```sh
   nm -D $(which php) | grep zend_mm_safe_error_ex
   # Expected: ... T zend_mm_safe_error_ex
-  ```
-  Or check the string table for the explicit overflow handler:
-  ```sh
-  strings $(which php) | grep "String allocation overflow"
   ```
 
 ## Installing
@@ -170,8 +167,8 @@ apt-get update && apt-get upgrade
 
 ## How it is built
 
-Each target builds in an OCI container (using **podman** or **docker**) of its own Debian or Ubuntu release, from archived Debian
-or deb.sury.org sources pinned by SHA256:
+Each target builds in a podman or docker container of its own Debian or Ubuntu release,
+from archived Debian or deb.sury.org sources pinned by SHA256:
 
 1. A builder image is created from the release's own base image (`debian:<codename>-slim`,
    `debian/eol:squeeze`, or `ubuntu:<version>`), pointed at the release's archive
@@ -198,13 +195,11 @@ Two kinds of changes go beyond adding the fix, each recorded in the target's `SO
 
 ## Building it yourself
 
-Requires **podman** or **docker**.
+Requires podman or docker.
 
 ```sh
 make list                                  # all targets
 make build-debian8-jessie/php5.6-debian    # packages land in dist/debian8-jessie/php5.6-debian/
-make build-ubuntu16.04-xenial/php5.6-sury  # builds Ubuntu 16.04 PHP 5.6
-make build-ubuntu16.04-xenial/php7.4-sury  # builds Ubuntu 16.04 PHP 7.4
 make test                                  # install test of everything built
 ```
 
