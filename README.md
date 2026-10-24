@@ -122,15 +122,12 @@ The repository is signed with a dedicated RSA 4096 key (`repo/debian-php-backpor
 fingerprint `32E9 9830 8C44 8BF6 CC57 BD7B FEE3 4861 1F66 C3D6`. RSA, because the `gpgv` of squeeze, wheezy and jessie cannot
 verify Ed25519 signatures.
 
-First set two values. `CODENAME` is found automatically (tested on wheezy to focal); check
-that it prints one of `wheezy jessie stretch buster xenial bionic focal`, and set it by hand
-if it is empty. `COMPONENT` is `sury`, `debian` or `debian7` (see the table and
-"Components" above).
+First set two values: your release and the component (see the table and "Components"
+above). Not sure about the release? Run `lsb_release -sc` or `cat /etc/os-release`.
 
 ```sh
-CODENAME=$(lsb_release -sc 2>/dev/null || (. /etc/os-release 2>/dev/null; echo "${VERSION_CODENAME:-$(echo "$VERSION" | sed -n 's/.*(\(.*\)).*/\1/p')}"))
-COMPONENT=sury
-echo "$CODENAME $COMPONENT"
+CODENAME=jessie    # your release: wheezy jessie stretch buster xenial bionic focal
+COMPONENT=sury     # sury, debian or debian7 (see the table above)
 ```
 
 Then import the key and add the repository. On stretch, buster, xenial, bionic and focal:
