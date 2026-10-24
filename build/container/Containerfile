@@ -37,6 +37,9 @@ ARG DEBEMAIL=""
 # Optional sed expression relaxing Build-Depends (applied to the dsc here and to
 # debian/control in the build), e.g. "s/libzip-dev (>= 1.0.0)/libzip-dev/"
 ARG CONTROL_SED=""
+# Optional packages to purge before the extra .debs are installed, e.g. a release's
+# older -dev package that conflicts with one shipped from a newer release.
+ARG PURGE_PACKAGES=""
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -64,6 +67,9 @@ RUN printf '%s\n' \
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         build-essential devscripts equivs fakeroot quilt dpkg-dev curl ca-certificates lsb-release \
+    && if [ -n "${PURGE_PACKAGES}" ]; then \
+           apt-get purge -y ${PURGE_PACKAGES}; \
+       fi \
     && if [ -n "${BACKPORTS_PACKAGES}" ]; then \
            apt-get install -y --no-install-recommends -t "${APT_BACKPORTS_SUITE}" ${BACKPORTS_PACKAGES}; \
        fi \

@@ -65,6 +65,17 @@ fi
 echo "    php-common package stanza after the change:"
 sed -n '/^Package: php-common$/,/^Description:/p' debian/control | sed 's/^/        /'
 
+# Releases whose debhelper predates compat 10 (trusty: 9.20131227, and its backports
+# suite has no debhelper): php-defaults uses no compat-10-only helper, so build it at
+# compat 9 with the release's own. dh-systemd is not installed yet either (the extra
+# .debs come later), so the session-cleanup timer addon is left out.
+if ! dpkg --compare-versions "$(dpkg-query -W -f='${Version}' debhelper)" ge 9.20160709; then
+    echo "    debhelper $(dpkg-query -W -f='${Version}' debhelper): building php-common at compat 9"
+    echo 9 > debian/compat
+    sed -i -e 's/debhelper (>= 10)/debhelper (>= 9.20131227)/' debian/control debian/control.in
+    sed -i -e 's/^DH_SYSTEMD := --with systemd/DH_SYSTEMD :=/' debian/rules
+fi
+
 # Build-Depends: debhelper (>= 10); already installed from backports where the release has an older one.
 mk-build-deps -i -r -t 'apt-get -y --no-install-recommends' debian/control > /dev/null
 export DEBFULLNAME DEBEMAIL

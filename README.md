@@ -11,10 +11,13 @@ PHP packages with security fixes for Debian releases that no longer receive them
 > it builds every PHP version for supported releases and gets fixes first. Nothing
 > here is built for, or should be installed on, a supported release.
 >
-> The Ubuntu targets, **Ubuntu 16.04 xenial** (PHP 5.6, 7.3, 7.4), **Ubuntu 18.04 bionic** (PHP 5.6,
-> 7.2, 7.4) and **Ubuntu 20.04 focal** (PHP 5.6, 7.2, 7.4), exist for the same reason: the
-> ondrej/php PPA dropped these releases when their standard support ended. Their own PHP
-> (xenial 7.0, bionic 7.2.24, focal 7.4.3) is still patched by Canonical through Ubuntu Pro (ESM).
+> The Ubuntu targets, **Ubuntu 14.04 trusty** (PHP 7.4), **Ubuntu 16.04 xenial** (PHP 5.6, 7.3, 7.4),
+> **Ubuntu 18.04 bionic** (PHP 5.6, 7.2, 7.4) and **Ubuntu 20.04 focal** (PHP 5.6, 7.2, 7.4), exist
+> for the same reason: the ondrej/php PPA dropped these releases when their standard support
+> ended. On trusty that was in 2019, before PHP 7.4 existed, so there was no 7.4 build for it
+> before this one. Trusty's ten years of support also ended in April 2024: nothing on it,
+> its own PHP 5.5 included, gets fixes from Canonical any more. Xenial's own PHP 7.0,
+> bionic's 7.2.24 and focal's 7.4.3 are still patched through Ubuntu Pro (ESM).
 >
 > **Debian 9 stretch and Debian 10 buster with their own PHP (7.0 and 7.3): use
 > [Freexian ELTS](https://www.freexian.com/lts/extended/docs/how-to-use-extended-lts/) first.** Its public repository already has the fix for
@@ -58,6 +61,7 @@ but it closes both problems in a simpler way:
 | Debian 10 buster | 7.3 | — | not built here: use [Freexian ELTS](https://www.freexian.com/lts/extended/docs/how-to-use-extended-lts/) | `php7.3` | ELTS `7.3.31-1~deb10u16` |
 | Debian 10 buster | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-105+0~20261022.135+debian10~1+animaa1` |
 | Debian 10 buster | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+debian10~1+animaa1` |
+| Ubuntu 14.04 trusty | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+ubuntu14.04~1+animaa1` |
 | Ubuntu 16.04 xenial | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-105+0~20261022.135+ubuntu16.04~1+animaa2` |
 | Ubuntu 16.04 xenial | 7.3 | `sury` | deb.sury.org | `php7.3` | `7.3.33-35+0~20261021.144+ubuntu16.04~1+animaa2` |
 | Ubuntu 16.04 xenial | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+ubuntu16.04~1+animaa2` |
@@ -89,14 +93,16 @@ The apt component says where the source comes from, and therefore what adding it
   release he no longer builds for. Use it if you already run his PHP version on that
   release. A few dependencies newer than the release has ship in the same component: on
   stretch `libpcre2` and `libargon2-1` from buster, on xenial `libpcre2`, `libargon2-0`
-  and `libtidy5` from bionic, and everywhere but buster a `php-common` rebuilt from
+  and `libtidy5` from bionic, on trusty those three plus `libzip`, `libpcre3` 8.38,
+  `libstdc++6`, `libsystemd` and `apache2-dev` (for `dh-apache2`) from xenial, and
+  everywhere but buster a `php-common` rebuilt from
   Sury's `php-defaults` source (next paragraph). The rebuild keeps the same
   PHP extension API (`phpapi-…`), so extension packages you installed earlier (imagick,
   redis, apcu, …) keep working. Where his repository dropped the release, those can no
   longer be installed new.
 
   *About `php-common`:* Sury's PHP packages need a `php-common` newer than jessie,
-  stretch, xenial and bionic have. His binary `php-common` is made for PHP 8 and declares
+  stretch, trusty, xenial and bionic have. His binary `php-common` is made for PHP 8 and declares
   `Breaks` on older versions of 42 PECL extension packages (`php-apcu` below 5.1.24,
   `php-imagick` below 3.7.0-12, `php-redis`, `php-memcached`, `php-xdebug`, …). Installed
   on an older release, it makes `apt-get` remove those extensions while upgrading PHP,
@@ -140,7 +146,7 @@ First set two values: your release and the component (see the table and "Compone
 above). Not sure about the release? Run `lsb_release -sc` or `cat /etc/os-release`.
 
 ```sh
-CODENAME=jessie    # your release: wheezy jessie stretch buster xenial bionic focal
+CODENAME=jessie    # your release: wheezy jessie stretch buster trusty xenial bionic focal
 COMPONENT=sury     # sury, debian or debian7 (see the table above)
 ```
 
@@ -154,7 +160,7 @@ echo "deb [signed-by=/usr/share/keyrings/debian-php-backports.gpg] https://anima
 apt-get update && apt-get upgrade
 ```
 
-Wheezy and jessie have no `signed-by`; use `apt-key` and a plain line:
+Wheezy, jessie and trusty have no `signed-by` (their apt predates it); use `apt-key` and a plain line:
 
 ```sh
 wget -qO- https://animaartificialis.github.io/debian-php-backports/debian-php-backports.asc | apt-key add -
