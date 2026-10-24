@@ -37,6 +37,13 @@ ARG DEBEMAIL=""
 # Optional sed expression relaxing Build-Depends (applied to the dsc here and to
 # debian/control in the build), e.g. "s/libzip-dev (>= 1.0.0)/libzip-dev/"
 ARG CONTROL_SED=""
+# Optional packages to purge before the extra .debs are installed, e.g. a release's
+# older -dev package that conflicts with one shipped from a newer release.
+ARG PURGE_PACKAGES=""
+# Optional group of .deb URLs unpacked in one dpkg call, then configured by apt-get -f:
+# for packages that depend on each other (debhelper and dh-autoreconf) or that Breaks
+# the version they replace, so they cannot be installed one by one.
+ARG EXTRA_DEB_GROUP_URLS=""
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -64,8 +71,20 @@ RUN printf '%s\n' \
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         build-essential devscripts equivs fakeroot quilt dpkg-dev curl ca-certificates lsb-release \
+    && if [ -n "${PURGE_PACKAGES}" ]; then \
+           apt-get purge -y ${PURGE_PACKAGES}; \
+       fi \
     && if [ -n "${BACKPORTS_PACKAGES}" ]; then \
            apt-get install -y --no-install-recommends -t "${APT_BACKPORTS_SUITE}" ${BACKPORTS_PACKAGES}; \
+       fi \
+    && if [ -n "${EXTRA_DEB_GROUP_URLS}" ]; then \
+           rm -f /tmp/extra-group-*.deb; i=0; \
+           for url in ${EXTRA_DEB_GROUP_URLS}; do \
+               i=$((i + 1)); curl -fsSL -o "/tmp/extra-group-$i.deb" "$url"; \
+           done \
+           && dpkg --unpack /tmp/extra-group-*.deb > /dev/null \
+           && apt-get -y -f install \
+           && rm -f /tmp/extra-group-*.deb; \
        fi \
     && if [ -n "${PHP_COMMON_SOURCE_VERSION}" ]; then build-php-common.sh; fi \
     && for url in ${EXTRA_DEB_URLS}; do \
