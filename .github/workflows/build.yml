@@ -1,18 +1,58 @@
 name: build
 
 on:
-  # Changes to documentation alone do not need a full build. Path filters are not used for
-  # tags, so a release tag always builds.
+  # The workflow always runs, so every pull request reports its checks. A `paths-ignore`
+  # filter here would leave required checks "Expected" forever on doc-only changes; the
+  # `changes` job decides instead, and a skipped job counts as success.
   push:
     branches: [main]
     tags: ['v*']
-    paths-ignore: ['**.md', 'LICENSE', 'repo/index.html']
   pull_request:
-    paths-ignore: ['**.md', 'LICENSE', 'repo/index.html']
   workflow_dispatch:
 
 jobs:
+  changes:
+    # Cheap checks that also cover changes which do not need a build.
+    runs-on: ubuntu-24.04
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Script tests
+        run: python3 -m unittest discover -s tests/sury-watch -t tests/sury-watch
+      - name: Decide whether a build is needed
+        id: diff
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          set -euo pipefail
+          # Tags always build; so does anything whose base commit is unknown (new branch,
+          # force push, manual run).
+          if [ "${{ github.ref_type }}" = "tag" ] || [ -z "$BASE" ] || ! git cat-file -e "$BASE^{commit}"; then
+            echo code=true >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          # From the merge base, so commits that only landed on the base branch since this
+          # branch was cut do not look like changes here. If there is no merge base, compare
+          # against the base itself: too much is better than too little.
+          MERGE_BASE="$(git merge-base "$BASE" HEAD || true)"
+          [ -n "$MERGE_BASE" ] || MERGE_BASE="$BASE"
+          git diff --name-only "$MERGE_BASE" HEAD > "$RUNNER_TEMP/changed.txt"
+          # Only these paths change without affecting a build. An empty diff is not a
+          # reason to build; checked explicitly, because grep's exit code on empty input
+          # is not the same everywhere.
+          code=false
+          if [ -s "$RUNNER_TEMP/changed.txt" ] && \
+              grep -Ev '^(.*\.md|LICENSE|repo/index\.html|repo/check-sury-updates\.py|\.github/workflows/sury-watch\.yml|tests/sury-watch/.*)$' \
+                  "$RUNNER_TEMP/changed.txt" > /dev/null; then
+            code=true
+          fi
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+
   targets:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-24.04
     outputs:
       list: ${{ steps.list.outputs.list }}

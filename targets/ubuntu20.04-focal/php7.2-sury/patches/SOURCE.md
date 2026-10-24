@@ -10,4 +10,5 @@ Changes:
 - the secure-DNS telemetry patch `0144` is dropped from the series.
 
 Nothing is shipped alongside: `php7.2-common` depends on `php-common (>= 1:81~)`, which focal's
-own 2:75 satisfies (higher epoch); everything comes from focal itself.
+own 2:75 satisfies (higher epoch); everything comes from focal itself. `tests/install` fails
+if apt cannot resolve that dependency.
