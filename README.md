@@ -122,26 +122,35 @@ The repository is signed with a dedicated RSA 4096 key (`repo/debian-php-backpor
 fingerprint `32E9 9830 8C44 8BF6 CC57 BD7B FEE3 4861 1F66 C3D6`. RSA, because the `gpgv` of squeeze, wheezy and jessie cannot
 verify Ed25519 signatures.
 
-Import the key and add the components you want. On stretch, buster, xenial, bionic and focal:
+First set two values. `CODENAME` is found automatically (tested on wheezy to focal); check
+that it prints one of `wheezy jessie stretch buster xenial bionic focal`, and set it by hand
+if it is empty. `COMPONENT` is `sury`, `debian` or `debian7` (see the table and
+"Components" above).
+
+```sh
+CODENAME=$(lsb_release -sc 2>/dev/null || (. /etc/os-release 2>/dev/null; echo "${VERSION_CODENAME:-$(echo "$VERSION" | sed -n 's/.*(\(.*\)).*/\1/p')}"))
+COMPONENT=sury
+echo "$CODENAME $COMPONENT"
+```
+
+Then import the key and add the repository. On stretch, buster, xenial, bionic and focal:
 
 ```sh
 curl -fsSL https://animaartificialis.github.io/debian-php-backports/debian-php-backports.asc \
   | gpg --dearmor -o /usr/share/keyrings/debian-php-backports.gpg
-echo "deb [signed-by=/usr/share/keyrings/debian-php-backports.gpg] https://animaartificialis.github.io/debian-php-backports buster sury" \
+echo "deb [signed-by=/usr/share/keyrings/debian-php-backports.gpg] https://animaartificialis.github.io/debian-php-backports $CODENAME $COMPONENT" \
   > /etc/apt/sources.list.d/debian-php-backports.list
 apt-get update && apt-get upgrade
 ```
 
-Squeeze, wheezy and jessie have no `signed-by`; use `apt-key` and a plain line:
+Wheezy and jessie have no `signed-by`; use `apt-key` and a plain line:
 
 ```sh
 wget -qO- https://animaartificialis.github.io/debian-php-backports/debian-php-backports.asc | apt-key add -
-echo "deb https://animaartificialis.github.io/debian-php-backports jessie debian" \
+echo "deb https://animaartificialis.github.io/debian-php-backports $CODENAME $COMPONENT" \
   > /etc/apt/sources.list.d/debian-php-backports.list
 apt-get update && apt-get upgrade
 ```
-
-Replace the codename and the component (`debian`, `sury`, `debian7`) to match the table.
 
 If `apt-get upgrade` says the PHP packages "have been kept back", the new packages need
 a package you do not have yet (for example, Sury's `php-common` needs `psmisc` and
