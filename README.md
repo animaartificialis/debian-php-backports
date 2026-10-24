@@ -227,8 +227,8 @@ index and opens an issue labelled `sury-update` when a newer revision exists. Up
 an open or closed issue already mentions are not reported again; a newer revision found
 while an issue is open is added to it as a comment. A second kind of issue, labelled
 `sury-dropped`, appears when a release this README sends to Sury is gone from his archive,
-or its suite has not changed for three months — bullseye is the last such release here.
-Those issues never receive update comments. The script also runs locally:
+or its suite falls more than two weeks behind bookworm's (Sury refreshes every suite
+daily) — bullseye is the last such release here. Those issues never receive update comments. The script also runs locally:
 `repo/check-sury-updates.py --dry-run`.
 
 ## License

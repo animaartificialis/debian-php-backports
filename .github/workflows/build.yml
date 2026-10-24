@@ -11,8 +11,14 @@ on:
   workflow_dispatch:
 
 jobs:
+  script-tests:
+    # Not in the needs chain of the builds: a broken script test must not block a release.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s tests/sury-watch -t tests/sury-watch
+
   changes:
-    # Cheap checks that also cover changes which do not need a build.
     runs-on: ubuntu-24.04
     outputs:
       code: ${{ steps.diff.outputs.code }}
@@ -20,8 +26,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Script tests
-        run: python3 -m unittest discover -s tests/sury-watch -t tests/sury-watch
       - name: Decide whether a build is needed
         id: diff
         env:

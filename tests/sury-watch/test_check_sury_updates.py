@@ -75,8 +75,11 @@ def serve(responses):
     return urlopen
 
 
-def for_all_watched(answer):
-    return {rel: answer for rel in sury.WATCHED_RELEASES}
+def for_all_watched(answer, reference=None):
+    """Every watched release answers `answer`; the reference suite is fresh unless given."""
+    responses = {rel: answer for rel in sury.WATCHED_RELEASES}
+    responses[sury.REFERENCE_RELEASE] = reference or FakeResponse(release_file(0))
+    return responses
 
 
 class DecideTest(unittest.TestCase):
@@ -106,6 +109,13 @@ class ReportDroppedTest(unittest.TestCase):
                                 [issue(1, body=DROPPED_BODY)], dry_run=True)
         self.assertIn("already reported", out.getvalue())
 
+    def test_marker_quoted_in_a_comment_does_not_count(self):
+        quoted = issue(1, body="update", comments=[{"body": DROPPED_BODY}])
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            sury.report_dropped([("bullseye", "the suite is gone")], [quoted], dry_run=True)
+        self.assertIn("plan: create issue", out.getvalue())
+
     def test_dry_run_prints_the_plan_and_never_calls_gh(self):
         out = io.StringIO()
         with mock.patch.object(sury, "gh", side_effect=AssertionError("gh was called")):
@@ -119,8 +129,22 @@ class ReportDroppedTest(unittest.TestCase):
 class DroppedReleasesTest(unittest.TestCase):
     def test_404_means_the_suite_is_gone(self):
         with mock.patch.object(sury.urllib.request, "urlopen", serve({})):
-            dropped = sury.dropped_releases()
+            with contextlib.redirect_stderr(io.StringIO()):
+                dropped = sury.dropped_releases()
         self.assertIn(("bullseye", "the suite is gone"), dropped)
+
+    def test_pause_of_the_whole_archive_is_not_a_drop(self):
+        old = FakeResponse(release_file(sury.LAG_DAYS + 30))
+        with mock.patch.object(sury.urllib.request, "urlopen", serve(for_all_watched(old, old))):
+            self.assertEqual(sury.dropped_releases(), [])
+
+    def test_without_the_reference_only_gone_suites_count(self):
+        stale = FakeResponse(release_file(sury.LAG_DAYS + 30))
+        responses = for_all_watched(stale, http_error(500))
+        with mock.patch.object(sury.urllib.request, "urlopen", serve(responses)):
+            with contextlib.redirect_stderr(io.StringIO()) as err:
+                self.assertEqual(sury.dropped_releases(), [])
+        self.assertIn("reference suite", err.getvalue())
 
     def test_recent_release_is_not_dropped(self):
         with mock.patch.object(sury.urllib.request, "urlopen",
@@ -128,7 +152,7 @@ class DroppedReleasesTest(unittest.TestCase):
             self.assertEqual(sury.dropped_releases(), [])
 
     def test_stale_release_is_dropped(self):
-        stale = FakeResponse(release_file(sury.STALE_DAYS + 10))
+        stale = FakeResponse(release_file(sury.LAG_DAYS + 10))
         with mock.patch.object(sury.urllib.request, "urlopen", serve(for_all_watched(stale))):
             reason = dict(sury.dropped_releases()).get("bullseye")
         self.assertIsNotNone(reason)
@@ -190,7 +214,8 @@ class FetchIssuesTest(unittest.TestCase):
 class MigrateLabelsTest(unittest.TestCase):
     def test_old_dropped_issue_is_moved(self):
         calls = []
-        with mock.patch.object(sury, "gh", side_effect=lambda *a, **k: calls.append(a) or ""):
+        with mock.patch.object(sury, "gh", side_effect=lambda *a, **k: calls.append(a) or ""), \
+                contextlib.redirect_stdout(io.StringIO()):
             sury.migrate_labels(
                 [issue(9, body=DROPPED_BODY, labels=[sury.LABEL])], dry_run=False)
         self.assertIn(("issue", "edit", "9", "--add-label", sury.DROPPED_LABEL,

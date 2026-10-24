@@ -19,8 +19,8 @@ The rules, so that nobody gets spammed when an issue sits for weeks:
   is created or changed.
 
 It also watches the releases for which the README sends people to deb.sury.org
-(WATCHED_RELEASES). When Sury's suite for one of them is gone, or has not changed for
-STALE_DAYS, it opens one issue with the `sury-dropped` label (marker
+(WATCHED_RELEASES). When Sury's suite for one of them is gone, or its Release file lags
+bookworm's by more than LAG_DAYS, it opens one issue with the `sury-dropped` label (marker
 `<!-- sury-dropped: RELEASE -->`), so we can decide whether to build for that release
 here. Those issues are kept apart from the update issues: they never become the target
 of an update comment, and issues from before that split, which still carry the
@@ -59,8 +59,9 @@ MARKER = re.compile(r"<!-- sury-update: (\S+) (\S+) -->")
 DROPPED = re.compile(r"<!-- sury-dropped: (\S+) -->")
 # Releases the README sends to deb.sury.org; Sury has said he will stop building bullseye.
 WATCHED_RELEASES = ["bullseye"]
-# Generous: Sury rebuilds a release in bursts, and a quiet spell is not a dropped release.
-STALE_DAYS = 90
+# A watched suite is dropped when its Release file lags this suite's by more than LAG_DAYS.
+REFERENCE_RELEASE = "bookworm"
+LAG_DAYS = 14
 
 
 def revision(version):
@@ -105,37 +106,54 @@ def read_sury(packages):
     return found
 
 
+def suite_date(rel):
+    """Date of Sury's Release file for rel: a datetime, "gone" on 404, None if unreadable."""
+    url = f"https://packages.sury.org/php/dists/{rel}/Release"
+    try:
+        with urllib.request.urlopen(url, timeout=60) as r:
+            head = r.read(4096).decode("utf-8", "replace")
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            return "gone"
+        print(f"warning: cannot read {url}: {e}", file=sys.stderr)
+        return None
+    except OSError as e:  # one unreachable suite must not hide the rest of the list
+        print(f"warning: cannot read {url}: {e}", file=sys.stderr)
+        return None
+    date = re.search(r"^Date: (.+)$", head, re.M)
+    if not date:
+        return None
+    try:
+        stamp = email.utils.parsedate_to_datetime(date.group(1))
+    except (TypeError, ValueError):
+        print(f"warning: unreadable Date in {url}: {date.group(1)!r}", file=sys.stderr)
+        return None
+    # A zone-less header (-0000 means "unknown") is read as UTC, which is what
+    # Debian's archive writes; the hours this may be off do not matter here.
+    if stamp.tzinfo is None:
+        stamp = stamp.replace(tzinfo=datetime.timezone.utc)
+    return stamp
+
+
 def dropped_releases():
-    """Watched releases whose Sury suite is gone or has not changed for STALE_DAYS."""
+    """Watched releases whose Sury suite is gone, or lags REFERENCE_RELEASE by more than
+    LAG_DAYS. Sury refreshes every suite daily, so a frozen one shows up within days, and
+    comparing with a suite he still builds is not fooled by a pause of the whole archive."""
+    reference = suite_date(REFERENCE_RELEASE)
+    if not isinstance(reference, datetime.datetime):
+        print(f"warning: no date for the reference suite {REFERENCE_RELEASE}; "
+              "only gone suites are reported", file=sys.stderr)
+        reference = None
     dropped = []
     for rel in WATCHED_RELEASES:
-        url = f"https://packages.sury.org/php/dists/{rel}/Release"
-        try:
-            with urllib.request.urlopen(url, timeout=60) as r:
-                head = r.read(4096).decode("utf-8", "replace")
-        except urllib.error.HTTPError as e:
-            if e.code == 404:
-                dropped.append((rel, "the suite is gone"))
-            else:
-                print(f"warning: cannot read {url}: {e}", file=sys.stderr)
-            continue
-        except OSError as e:  # one unreachable suite must not hide the rest of the list
-            print(f"warning: cannot read {url}: {e}", file=sys.stderr)
-            continue
-        date = re.search(r"^Date: (.+)$", head, re.M)
-        if date:
-            try:
-                stamp = email.utils.parsedate_to_datetime(date.group(1))
-            except (TypeError, ValueError):
-                print(f"warning: unreadable Date in {url}: {date.group(1)!r}", file=sys.stderr)
-                continue
-            # A zone-less header (-0000 means "unknown") is read as UTC, which is what
-            # Debian's archive writes; the hours this may be off do not matter here.
-            if stamp.tzinfo is None:
-                stamp = stamp.replace(tzinfo=datetime.timezone.utc)
-            age = (time.time() - stamp.timestamp()) / 86400
-            if age > STALE_DAYS:
-                dropped.append((rel, f"the suite has not changed for {int(age)} days"))
+        stamp = suite_date(rel)
+        if stamp == "gone":
+            dropped.append((rel, "the suite is gone"))
+        elif stamp and reference:
+            lag = (reference - stamp).total_seconds() / 86400
+            if lag > LAG_DAYS:
+                dropped.append((rel, f"the suite has not changed for {int(lag)} days "
+                                     f"longer than {REFERENCE_RELEASE}"))
     return dropped
 
 
@@ -215,7 +233,8 @@ def migrate_labels(issues, dry_run):
 
 def report_dropped(dropped, issues, dry_run):
     """One issue per dropped release, unless any issue already carries its marker."""
-    known = markers(DROPPED, issues)
+    # Body only, as in is_dropped(): a marker quoted in a comment does not count.
+    known = {rel for issue in issues for rel in DROPPED.findall(issue.get("body") or "")}
     for rel, why in dropped:
         if rel in known:
             print(f"{rel}: already reported in an issue")
