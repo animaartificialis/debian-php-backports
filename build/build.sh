@@ -13,6 +13,7 @@ ENV_VARS=(
     SURY_SOURCE_PACKAGE SURY_DEBIAN_TAR_URL SURY_DEBIAN_TAR_SHA256 SURY_PATCHES
     CHANGELOG_ENTRY TEST_PACKAGES TEST_PHP_BINARY NEW_VERSION BUILD_DEP_DSC_URL
     APT_COMPONENTS APT_BACKPORTS_SUITE BACKPORTS_PACKAGES EXTRA_DEB_URLS CONTROL_SED RULES_SED DROP_PATCHES APT_EXTRA_CONF SOURCE_FIXUP_CMD
+    PHP_COMMON_SOURCE_VERSION PHP_COMMON_VERSION
 )
 
 usage() {
@@ -42,6 +43,10 @@ source "$REPO_ROOT/build/build.conf"
 source "$TARGET_DIR/target.conf"
 # Space separated lists may be written over several lines in target.conf.
 EXTRA_DEB_URLS="$(echo ${EXTRA_DEB_URLS:-})"
+# The php-common rebuild (pins in build.conf) only happens for targets that ask for it.
+if [ "${REBUILD_PHP_COMMON:-0}" != 1 ]; then
+    PHP_COMMON_SOURCE_VERSION=""; PHP_COMMON_DSC_SHA256=""; PHP_COMMON_VERSION=""
+fi
 
 # Container engine: prefer podman if available, otherwise docker.
 CONTAINER_CLI="${CONTAINER_CLI:-$(command -v podman 2>/dev/null || command -v docker 2>/dev/null || true)}"
@@ -99,6 +104,21 @@ fi
 
 build_image() {
     echo "==> Building image $IMAGE from $BASE_IMAGE using $CONTAINER_TYPE ($ARCH)"
+    # The build context is a copy of build/container/ plus the source files the image
+    # build needs that an earlier package build left in cache/<target>/ (the build-dep
+    # .dsc, the php-defaults source): packages.sury.org keeps only the current revision,
+    # so a cached file may be the only copy. A bind mount would be podman-only.
+    local ctx f
+    ctx="$(mktemp -d)"
+    trap 'rm -rf "$ctx"' RETURN
+    cp -a "$REPO_ROOT/build/container/." "$ctx/"
+    mkdir -p "$ctx/cache" "$CACHE_DIR"
+    shopt -s nullglob
+    for f in "$CACHE_DIR/$(basename "${BUILD_DEP_DSC_URL:-none}" | sed 's/%2B/+/g')" \
+             "$CACHE_DIR/php-defaults_${PHP_COMMON_SOURCE_VERSION:-none}".*; do
+        [ -f "$f" ] && cp "$f" "$ctx/cache/"
+    done
+    shopt -u nullglob
     "$CONTAINER_CLI" build \
         "${PLATFORM_ARG[@]}" \
         --build-arg BASE_IMAGE="$BASE_IMAGE" \
@@ -116,9 +136,14 @@ build_image() {
         --build-arg BACKPORTS_PACKAGES="${BACKPORTS_PACKAGES:-}" \
         --build-arg EXTRA_DEB_URLS="${EXTRA_DEB_URLS:-}" \
         --build-arg CONTROL_SED="${CONTROL_SED:-}" \
+        --build-arg PHP_COMMON_SOURCE_VERSION="${PHP_COMMON_SOURCE_VERSION:-}" \
+        --build-arg PHP_COMMON_DSC_SHA256="${PHP_COMMON_DSC_SHA256:-}" \
+        --build-arg PHP_COMMON_VERSION="${PHP_COMMON_VERSION:-}" \
+        --build-arg DEBFULLNAME="$DEBFULLNAME" \
+        --build-arg DEBEMAIL="$DEBEMAIL" \
         -t "$IMAGE" \
-        -f "$REPO_ROOT/build/container/Containerfile" \
-        "$REPO_ROOT/build/container"
+        -f "$ctx/Containerfile" \
+        "$ctx"
 }
 
 build_packages() {

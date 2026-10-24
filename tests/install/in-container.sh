@@ -51,6 +51,22 @@ fi
 echo "OK (negative): stock package is unpatched"
 fi
 
+# TEST_DUMMY_PACKAGES ("name=version ..."): empty packages standing in for PECL
+# extensions a server has from the release or from Sury's old repository (php-apcu,
+# php-imagick, ...). The upgrade must keep them: Sury's php-common breaks older versions
+# of them, and apt would remove them instead of upgrading PHP.
+if [ -n "${TEST_DUMMY_PACKAGES:-}" ]; then
+    echo "==> Install stand-ins for installed extension packages: $TEST_DUMMY_PACKAGES"
+    for spec in $TEST_DUMMY_PACKAGES; do
+        name="${spec%%=*}"; version="${spec#*=}"
+        mkdir -p "/tmp/dummy/$name/DEBIAN"
+        printf 'Package: %s\nVersion: %s\nArchitecture: all\nMaintainer: install test <test@localhost>\nDescription: test stand-in for %s\n' \
+            "$name" "$version" "$name" > "/tmp/dummy/$name/DEBIAN/control"
+        dpkg-deb -b "/tmp/dummy/$name" "/tmp/dummy/$name.deb" > /dev/null
+        dpkg -i "/tmp/dummy/$name.deb"
+    done
+fi
+
 echo "==> Create local apt repository from /dist"
 apt-get install -y --no-install-recommends dpkg-dev
 mkdir /tmp/repo
@@ -66,6 +82,24 @@ apt-get update
 
 echo "==> Upgrade to patched $TEST_PACKAGES"
 apt-get install -y --no-install-recommends "${packages[@]}"
+# Then the plain upgrade the README tells users to run: it brings the rebuilt php-common
+# in where the release's own one satisfied the dependencies (focal).
+apt-get upgrade -y --no-install-recommends
+for spec in ${TEST_DUMMY_PACKAGES:-}; do
+    name="${spec%%=*}"
+    [ "$(dpkg-query -W -f='${Status}' "$name" 2>/dev/null)" = "install ok installed" ] \
+        || fail "the upgrade removed $name (Breaks in php-common?)"
+    echo "OK: $name survived the upgrade"
+done
+# PHP_COMMON_VERSION: the target ships its own php-common (build-php-common.sh); it must
+# be the one installed, and without the Breaks field.
+if [ -n "${PHP_COMMON_VERSION:-}" ]; then
+    php_common_version="$(dpkg-query -W -f='${Version}' php-common)"
+    [ "$php_common_version" = "$PHP_COMMON_VERSION" ] \
+        || fail "php-common version is $php_common_version, expected $PHP_COMMON_VERSION"
+    [ -z "$(dpkg-query -W -f='${Breaks}' php-common)" ] || fail "php-common still has a Breaks field"
+    echo "OK: php-common $php_common_version without Breaks"
+fi
 
 echo "==> POSITIVE case"
 zcat "$CHANGELOG" | grep -c "$CVE_ID" > /dev/null || fail "changelog does not mention $CVE_ID"

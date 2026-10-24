@@ -49,24 +49,24 @@ but it closes both problems in a simpler way:
 | Debian 6 squeeze | 5.4 | `debian7` | Debian 7 | `php5` | `5.4.45-1+animaa2~squeeze` |
 | Debian 7 wheezy | 5.4 | `debian` | Debian 7 | `php5` | `5.4.45-0+deb7u14+animaa2` |
 | Debian 8 jessie | 5.6 | `debian` | Debian 8 | `php5` | `5.6.40+dfsg-0+deb8u12+animaa2` |
-| Debian 8 jessie | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-105+0~20261022.135+debian8~1+animaa1` |
-| Debian 8 jessie | 7.1 | `sury` | deb.sury.org | `php7.1` | `7.1.33-81+0~20261022.128+debian8~1+animaa1` |
-| Debian 9 stretch | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-105+0~20261022.135+debian9~1+animaa1` |
+| Debian 8 jessie | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-105+0~20261022.135+debian8~1+animaa2` |
+| Debian 8 jessie | 7.1 | `sury` | deb.sury.org | `php7.1` | `7.1.33-81+0~20261022.128+debian8~1+animaa2` |
+| Debian 9 stretch | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-105+0~20261022.135+debian9~1+animaa2` |
 | Debian 9 stretch | 7.0 | — | not built here: use [Freexian ELTS](https://www.freexian.com/lts/extended/docs/how-to-use-extended-lts/) | `php7.0` | ELTS `7.0.33-0+deb9u26` |
-| Debian 9 stretch | 7.3 | `sury` | deb.sury.org | `php7.3` | `7.3.33-35+0~20261021.144+debian9~1+animaa1` |
-| Debian 9 stretch | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+debian9~1+animaa1` |
+| Debian 9 stretch | 7.3 | `sury` | deb.sury.org | `php7.3` | `7.3.33-35+0~20261021.144+debian9~1+animaa2` |
+| Debian 9 stretch | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+debian9~1+animaa2` |
 | Debian 10 buster | 7.3 | — | not built here: use [Freexian ELTS](https://www.freexian.com/lts/extended/docs/how-to-use-extended-lts/) | `php7.3` | ELTS `7.3.31-1~deb10u16` |
 | Debian 10 buster | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-105+0~20261022.135+debian10~1+animaa1` |
 | Debian 10 buster | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+debian10~1+animaa1` |
-| Ubuntu 16.04 xenial | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-105+0~20261022.135+ubuntu16.04~1+animaa1` |
-| Ubuntu 16.04 xenial | 7.3 | `sury` | deb.sury.org | `php7.3` | `7.3.33-35+0~20261021.144+ubuntu16.04~1+animaa1` |
-| Ubuntu 16.04 xenial | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+ubuntu16.04~1+animaa1` |
-| Ubuntu 18.04 bionic | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-105+0~20261022.135+ubuntu18.04~1+animaa1` |
-| Ubuntu 18.04 bionic | 7.2 | `sury` | deb.sury.org | `php7.2` | `7.2.34-66+0~20261021.122+ubuntu18.04~1+animaa1` |
-| Ubuntu 18.04 bionic | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+ubuntu18.04~1+animaa1` |
-| Ubuntu 20.04 focal | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-105+0~20261022.135+ubuntu20.04~1+animaa1` |
-| Ubuntu 20.04 focal | 7.2 | `sury` | deb.sury.org | `php7.2` | `7.2.34-66+0~20261021.122+ubuntu20.04~1+animaa1` |
-| Ubuntu 20.04 focal | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+ubuntu20.04~1+animaa1` |
+| Ubuntu 16.04 xenial | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-105+0~20261022.135+ubuntu16.04~1+animaa2` |
+| Ubuntu 16.04 xenial | 7.3 | `sury` | deb.sury.org | `php7.3` | `7.3.33-35+0~20261021.144+ubuntu16.04~1+animaa2` |
+| Ubuntu 16.04 xenial | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+ubuntu16.04~1+animaa2` |
+| Ubuntu 18.04 bionic | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-105+0~20261022.135+ubuntu18.04~1+animaa2` |
+| Ubuntu 18.04 bionic | 7.2 | `sury` | deb.sury.org | `php7.2` | `7.2.34-66+0~20261021.122+ubuntu18.04~1+animaa2` |
+| Ubuntu 18.04 bionic | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+ubuntu18.04~1+animaa2` |
+| Ubuntu 20.04 focal | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-105+0~20261022.135+ubuntu20.04~1+animaa2` |
+| Ubuntu 20.04 focal | 7.2 | `sury` | deb.sury.org | `php7.2` | `7.2.34-66+0~20261021.122+ubuntu20.04~1+animaa2` |
+| Ubuntu 20.04 focal | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+ubuntu20.04~1+animaa2` |
 
 All targets are built for `amd64`. Five are also built for `arm64`: Debian 10 buster
 PHP 5.6 and 7.4, and Ubuntu 20.04 focal PHP 5.6, 7.2 and 7.4. These are the first releases that
@@ -87,12 +87,26 @@ The apt component says where the source comes from, and therefore what adding it
   is fixed in [Freexian ELTS](https://www.freexian.com/lts/extended/docs/how-to-use-extended-lts/).
 - **`sury`** — Ondřej Surý's PHP packages (which already contain the fix), rebuilt for a
   release he no longer builds for. Use it if you already run his PHP version on that
-  release. A few dependencies newer than the release has (Sury's `php-common`; on stretch
-  `libpcre2` and `libargon2-1` from buster; on xenial `libpcre2`, `libargon2-0` and
-  `libtidy5` from bionic) ship in the same component. The rebuild keeps the same PHP
-  extension API (`phpapi-…`), so extension packages you installed from Ondřej earlier
-  (imagick, redis, apcu, …) keep working. Where his repository dropped the release, those
-  can no longer be installed new.
+  release. A few dependencies newer than the release has ship in the same component: on
+  stretch `libpcre2` and `libargon2-1` from buster, on xenial `libpcre2`, `libargon2-0`
+  and `libtidy5` from bionic, and everywhere but buster a `php-common` rebuilt from
+  Sury's `php-defaults` source (next paragraph). The rebuild keeps the same
+  PHP extension API (`phpapi-…`), so extension packages you installed earlier (imagick,
+  redis, apcu, …) keep working. Where his repository dropped the release, those can no
+  longer be installed new.
+
+  *About `php-common`:* Sury's PHP packages need a `php-common` newer than jessie,
+  stretch, xenial and bionic have. His binary `php-common` is made for PHP 8 and declares
+  `Breaks` on older versions of 42 PECL extension packages (`php-apcu` below 5.1.24,
+  `php-imagick` below 3.7.0-12, `php-redis`, `php-memcached`, `php-xdebug`, …). Installed
+  on an older release, it makes `apt-get` remove those extensions while upgrading PHP,
+  even the release's own versions. Releases up to `v2026.10.23.1` shipped that binary
+  (on focal too, although focal's own 2:75 would do). Now the `sury` component ships
+  `php-common` rebuilt from the same `php-defaults` source with that field removed, as
+  `2:101+0~20261021.78+debian11~1.gbp53f25f+animaa1` on every release: Sury's version
+  plus the suffix, so it sorts above his binary and replaces it with a normal
+  `apt-get upgrade`. Extensions that an earlier upgrade removed can then be installed
+  again (from your own copy; the old repositories are gone).
 - **`debian<N>`** — the PHP of a *newer* Debian release built for an older one (squeeze
   gets wheezy's PHP 5.4; squeeze itself shipped 5.3). Adding it upgrades PHP to that
   version. On squeeze, PECL extension packages built for PHP 5.3 (`phpapi-20090626`) are
@@ -184,6 +198,10 @@ from archived Debian or deb.sury.org sources pinned by SHA256:
 1. A builder image is created from the release's own base image (`debian:<codename>-slim`,
    `debian/eol:squeeze`, or `ubuntu:<version>`), pointed at the release's archive
    (archive.debian.org for Debian, archive.ubuntu.com for Ubuntu), with the source package's build dependencies installed.
+   For the `sury` targets on every release but buster, the image also rebuilds
+   `php-common` from Sury's pinned `php-defaults` source without its `Breaks` field
+   (`build/container/build-php-common.sh`, pins in `build/build.conf`), and the package
+   ships with the target.
 2. The source package is downloaded and its `.dsc` checksum verified.
 3. For `debian` targets, Sury's fixes are added to `debian/patches/series` (the patch files
    are committed under `targets/*/patches/`, with their origin in `SOURCE.md`).
@@ -220,16 +238,17 @@ repository, `tests/` holds the install test.
 
 ## Maintenance
 
-The `sury` targets pin deb.sury.org source packages by exact version, and Sury removes old
-revisions from his pool. A scheduled workflow (`.github/workflows/sury-watch.yml`, every eight
-hours) runs `repo/check-sury-updates.py`, which compares the pinned revisions with Sury's
-index and opens an issue labelled `sury-update` when a newer revision exists. Updates that
-an open or closed issue already mentions are not reported again; a newer revision found
-while an issue is open is added to it as a comment. A second kind of issue, labelled
+The `sury` targets pin deb.sury.org source packages (PHP, and `php-defaults` where
+`php-common` is rebuilt) by exact version, and Sury removes old revisions from his pool.
+A scheduled workflow (`.github/workflows/sury-watch.yml`, every eight hours) runs
+`repo/check-sury-updates.py`, which compares the pinned revisions with Sury's index and
+opens an issue labelled `sury-update` when a newer revision exists. Updates that an open
+or closed issue already mentions are not reported again; a newer revision found while an
+issue is open is added to it as a comment. A second kind of issue, labelled
 `sury-dropped`, appears when a release this README sends to Sury is gone from his archive,
 or its suite falls more than two weeks behind bookworm's (Sury refreshes every suite
-daily) — bullseye is the last such release here. Those issues never receive update comments. The script also runs locally:
-`repo/check-sury-updates.py --dry-run`.
+daily) — bullseye is the last such release here. Those issues never receive update
+comments. The script also runs locally: `repo/check-sury-updates.py --dry-run`.
 
 ## License
 

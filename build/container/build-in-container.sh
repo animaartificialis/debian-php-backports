@@ -158,6 +158,15 @@ main() {
         cp "$CACHE_DIR/$name" "$OUT_DIR/"
         echo "    extra: $name"
     done
+    # php-common rebuilt while the builder image was made (build-php-common.sh) ships too;
+    # the sources it was built from go to the cache for the next image build.
+    local php_common_deb=""
+    if [ -n "${PHP_COMMON_SOURCE_VERSION:-}" ]; then
+        php_common_deb="$(ls /usr/local/share/php-common/php-common_*.deb)"
+        cp "$php_common_deb" "$OUT_DIR/"
+        cp -n /usr/local/share/php-common/src/* "$CACHE_DIR/"
+        echo "    php-common: $(basename "$php_common_deb")"
+    fi
     (cd "$OUT_DIR" && sha256sum ./*.deb > SHA256SUMS)
     # Packages index so the directory works as a local apt repository:
     #   deb [trusted=yes] file:/path/to/dir ./
@@ -169,6 +178,9 @@ main() {
         echo "new version:     $NEW_VERSION"
         echo "patches applied: ${patches[*]:-(none, source package used as is)}"
         echo "patches dropped: ${DROP_PATCHES:-(none)}"
+        if [ -n "$php_common_deb" ]; then
+            echo "php-common:      $(dpkg-deb -f "$php_common_deb" Version) (deb.sury.org php-defaults $PHP_COMMON_SOURCE_VERSION rebuilt without Breaks)"
+        fi
         echo "build date:      $(date -u +%Y-%m-%dT%H:%M:%SZ)"
         echo "architecture:    $(dpkg-architecture -qDEB_HOST_ARCH)"
     } > "$OUT_DIR/BUILD-INFO.txt"

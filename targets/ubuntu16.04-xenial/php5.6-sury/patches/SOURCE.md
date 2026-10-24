@@ -10,5 +10,9 @@ Changes:
 
 - built with debhelper 10 from xenial-backports (Sury's packaging needs >= 9.20160709),
 - the secure-DNS telemetry patch `0251` is dropped from the series,
-- shipped alongside: Sury's `php-common` 2:101, and `libtidy5` 5.2.0 from bionic (xenial
-  has only the 2009 libtidy-0.99). Both depend only on glibc >= 2.14.
+- shipped alongside: `libtidy5` 5.2.0 from bionic (xenial has only the 2009 libtidy-0.99;
+  it depends only on glibc >= 2.14), and `php-common` rebuilt from Sury's `php-defaults` 101+0~20261021.78+debian11~1.gbp53f25f
+  (`.dsc` SHA256 pinned in `build/build.conf`) without the `Breaks` field of `php-common`:
+  it lists older PECL extension packages (`php-apcu (<< 5.1.24-1~)`, `php-imagick
+  (<< 3.7.0-12~)`, …) that do not work with PHP 8, and would make apt remove working
+  extensions here.

@@ -2,7 +2,9 @@
 """Open a GitHub issue when deb.sury.org has a newer revision of a source we pin.
 
 The `sury` targets pin Ondřej Surý's source packages by exact version, and some of
-them also ship his php-common. Sury removes old revisions from his pool, so a new
+them also rebuild his php-common (source php-defaults, pinned once in build/build.conf
+as PHP_COMMON_SOURCE_VERSION, used by the targets with REBUILD_PHP_COMMON=1). Sury
+removes old revisions from his pool, so a new
 revision breaks our build and usually carries a security fix. This script runs from
 .github/workflows/sury-watch.yml and reports new revisions as issues in this repo.
 
@@ -76,6 +78,11 @@ def newer(a, b):
 def read_pins(targets_dir):
     """{package: {revision: [target, ...]}} from the targets that use Sury's pool."""
     pins = {}
+    common = None
+    conf = targets_dir.parent / "build" / "build.conf"
+    if conf.is_file():
+        m = re.search(r"^PHP_COMMON_SOURCE_VERSION=(\S+)", conf.read_text(), re.M)
+        common = revision(m.group(1)) if m else None
     for conf in sorted(targets_dir.glob("*/*/target.conf")):
         target = conf.parent.relative_to(targets_dir).as_posix()
         text = conf.read_text()
@@ -84,10 +91,8 @@ def read_pins(targets_dir):
         url = re.search(r"^SOURCE_POOL_URL=(\S+)", text, re.M)
         if pkg and ver and url and "packages.sury.org" in url.group(1):
             pins.setdefault(pkg.group(1), {}).setdefault(revision(ver.group(1)), []).append(target)
-        common = re.search(r"php-defaults/php-common_(\S+?)_all\.deb", text)
-        if common:
-            rev = revision(common.group(1).replace("%2B", "+"))
-            pins.setdefault("php-defaults", {}).setdefault(rev, []).append(target)
+        if common and re.search(r"^REBUILD_PHP_COMMON=1", text, re.M):
+            pins.setdefault("php-defaults", {}).setdefault(common, []).append(target)
     return pins
 
 

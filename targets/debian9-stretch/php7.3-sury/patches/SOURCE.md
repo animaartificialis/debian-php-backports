@@ -12,6 +12,9 @@ Changes:
   third-party extensions built against stretch PHP (e.g. `apcu.so: undefined symbol:
   pcre2_match_8`),
 - the secure-DNS telemetry patch `0126` is dropped from the series,
-- shipped alongside: Sury's `php-common` 2:101 (arch all) and `libargon2-1`
-  0~20171227-0.2 from buster (stretch's is older than PHP 7.3 needs; it depends only on
-  glibc >= 2.14).
+- shipped alongside: `libargon2-1` 0~20171227-0.2 from buster (stretch's is older than
+  PHP 7.3 needs; it depends only on glibc >= 2.14), and `php-common` rebuilt from Sury's `php-defaults` 101+0~20261021.78+debian11~1.gbp53f25f
+  (`.dsc` SHA256 pinned in `build/build.conf`) without the `Breaks` field of `php-common`:
+  it lists older PECL extension packages (`php-apcu (<< 5.1.24-1~)`, `php-imagick
+  (<< 3.7.0-12~)`, …) that do not work with PHP 8, and would make apt remove working
+  extensions here.

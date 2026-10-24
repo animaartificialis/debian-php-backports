@@ -24,11 +24,27 @@ ARG APT_BACKPORTS_SUITE=""
 ARG BACKPORTS_PACKAGES=""
 # Optional extra .deb files (space separated URLs) installed before build-dep
 ARG EXTRA_DEB_URLS=""
+# If set, php-common is rebuilt from Sury's php-defaults source of this version (the .dsc
+# checksum pinned by PHP_COMMON_DSC_SHA256) as PHP_COMMON_VERSION, without its Breaks on
+# older PECL extension packages, then installed and shipped: see build-php-common.sh
+# and the pins in build/build.conf.
+ARG PHP_COMMON_SOURCE_VERSION=""
+ARG PHP_COMMON_DSC_SHA256=""
+ARG PHP_COMMON_VERSION=""
+# Changelog author of that rebuild
+ARG DEBFULLNAME=""
+ARG DEBEMAIL=""
 # Optional sed expression relaxing Build-Depends (applied to the dsc here and to
 # debian/control in the build), e.g. "s/libzip-dev (>= 1.0.0)/libzip-dev/"
 ARG CONTROL_SED=""
 
 ENV DEBIAN_FRONTEND=noninteractive
+
+# Source files build.sh found in cache/<target>/ (the build-dep .dsc, php-defaults): used
+# instead of downloading them again, since packages.sury.org keeps only the current
+# revision of a package.
+COPY cache/ /cache/
+COPY build-php-common.sh /usr/local/bin/build-php-common.sh
 
 # Archived releases: no -updates suite on archive.debian.org, Release files are expired.
 RUN printf '%s\n' \
@@ -51,12 +67,15 @@ RUN apt-get update \
     && if [ -n "${BACKPORTS_PACKAGES}" ]; then \
            apt-get install -y --no-install-recommends -t "${APT_BACKPORTS_SUITE}" ${BACKPORTS_PACKAGES}; \
        fi \
+    && if [ -n "${PHP_COMMON_SOURCE_VERSION}" ]; then build-php-common.sh; fi \
     && for url in ${EXTRA_DEB_URLS}; do \
            curl -fsSL -o /tmp/extra.deb "$url" && dpkg -i /tmp/extra.deb || apt-get install -f -y; \
            rm -f /tmp/extra.deb; \
        done \
     && if [ -n "${BUILD_DEP_DSC_URL}" ]; then \
-           curl -fsSL -o /tmp/build-dep.dsc "${BUILD_DEP_DSC_URL}" \
+           dsc="$(basename "${BUILD_DEP_DSC_URL}" | sed 's/%2B/+/g')" \
+           && if [ -f "/cache/${dsc}" ]; then cp "/cache/${dsc}" /tmp/build-dep.dsc; \
+              else curl -fsSL -o /tmp/build-dep.dsc "${BUILD_DEP_DSC_URL}"; fi \
            && sed -i -e '/^-----BEGIN PGP SIGNED MESSAGE-----/,/^$/d' -e '/^-----BEGIN PGP SIGNATURE-----/,$d' /tmp/build-dep.dsc \
            && if [ -n "${CONTROL_SED}" ]; then sed -i -e "${CONTROL_SED}" /tmp/build-dep.dsc; fi \
            && mk-build-deps -i -r -t 'apt-get -y --no-install-recommends' /tmp/build-dep.dsc \

@@ -9,4 +9,8 @@ The `.dsc` SHA256 is pinned in `target.conf`.
 Changes:
 
 - the secure-DNS telemetry patch `0251` is dropped from the series,
-- Sury's `php-common` 2:101 is shipped alongside.
+- shipped alongside: `php-common` rebuilt from Sury's `php-defaults` 101+0~20261021.78+debian11~1.gbp53f25f
+  (`.dsc` SHA256 pinned in `build/build.conf`) without the `Breaks` field of `php-common`:
+  it lists older PECL extension packages (`php-apcu (<< 5.1.24-1~)`, `php-imagick
+  (<< 3.7.0-12~)`, …) that do not work with PHP 8, and would make apt remove working
+  extensions here.

@@ -21,6 +21,9 @@ source "$REPO_ROOT/build/build.conf"
 # shellcheck source=/dev/null
 source "$TARGET_CONF"
 
+# php-common is checked only where the target rebuilds it (pins in build.conf).
+[ "${REBUILD_PHP_COMMON:-0}" = 1 ] || PHP_COMMON_VERSION=""
+
 # Container engine: prefer podman if available, otherwise docker.
 CONTAINER_CLI="${CONTAINER_CLI:-$(command -v podman 2>/dev/null || command -v docker 2>/dev/null || true)}"
 if [ -z "$CONTAINER_CLI" ]; then
@@ -86,6 +89,8 @@ fi
     -e SOURCE_VERSION="$SOURCE_VERSION" \
     -e VERSION_SUFFIX="$VERSION_SUFFIX" \
     -e NEW_VERSION="${NEW_VERSION:-}" \
+    -e TEST_DUMMY_PACKAGES="${TEST_DUMMY_PACKAGES:-}" \
+    -e PHP_COMMON_VERSION="${PHP_COMMON_VERSION:-}" \
     -v "$DIST_DIR:/dist:ro" \
     -v "$SCRIPT_DIR/in-container.sh:/test.sh:ro" \
     "$BASE_IMAGE" \
