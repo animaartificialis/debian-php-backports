@@ -90,7 +90,9 @@ The apt component says where the source comes from, and therefore what adding it
   release. A few dependencies newer than the release has ship in the same component: on
   stretch `libpcre2` and `libargon2-1` from buster, on xenial `libpcre2`, `libargon2-0`
   and `libtidy5` from bionic, and everywhere but buster a `php-common` rebuilt from
-  Sury's `php-defaults` source (next paragraph). The rebuild keeps the same
+  Sury's `php-defaults` source (next paragraph). The shipped `libpcre2` replaces the
+  older one of the release. `libpcre2-dev` ships too, because `phpX.Y-dev` needs it; the
+  argon2 and tidy `-dev` packages are only used for the build. The rebuild keeps the same
   PHP extension API (`phpapi-…`), so extension packages you installed earlier (imagick,
   redis, apcu, …) keep working. Where his repository dropped the release, those can no
   longer be installed new.

@@ -150,10 +150,15 @@ main() {
         exit 1
     fi
     cp "${artifacts[@]}" "$OUT_DIR/"
-    # Extra .deb files the built packages depend on (e.g. Sury php-common) ship with them.
+    # Extra .deb files the built packages depend on (e.g. Sury php-common) ship with them;
+    # those in EXTRA_DEB_BUILD_ONLY were only needed for the build.
     local url name
     for url in ${EXTRA_DEB_URLS:-}; do
         name="$(basename "$url" | sed 's/%2B/+/g')"
+        if [[ " ${EXTRA_DEB_BUILD_ONLY:-} " == *" ${name%%_*} "* ]]; then
+            echo "    build only: $name"
+            continue
+        fi
         [ -f "$CACHE_DIR/$name" ] || curl -fsSL --retry 3 -o "$CACHE_DIR/$name" "$url"
         cp "$CACHE_DIR/$name" "$OUT_DIR/"
         echo "    extra: $name"
@@ -171,6 +176,17 @@ main() {
     # Packages index so the directory works as a local apt repository:
     #   deb [trusted=yes] file:/path/to/dir ./
     (cd "$OUT_DIR" && dpkg-scanpackages . /dev/null 2>/dev/null > Packages && gzip -9n -c Packages > Packages.gz)
+    local deps
+    if [ -n "${EXTRA_DEB_BUILD_ONLY:-}" ]; then
+        deps="$(awk -F': ' '/^(Pre-)?Depends:/ { print $2 }' "$OUT_DIR/Packages" \
+            | tr ',|' '\n\n' | sed 's/([^)]*)//; s/:any//; s/^ *//; s/ *$//' | sort -u)"
+        for name in $EXTRA_DEB_BUILD_ONLY; do
+            if grep -qxF "$name" <<< "$deps"; then
+                echo "ERROR: a shipped package depends on $name, which EXTRA_DEB_BUILD_ONLY keeps out of $OUT_DIR" >&2
+                exit 1
+            fi
+        done
+    fi
     {
         echo "codename:        $DEBIAN_CODENAME"
         echo "source package:  $SOURCE_PACKAGE"
@@ -178,6 +194,9 @@ main() {
         echo "new version:     $NEW_VERSION"
         echo "patches applied: ${patches[*]:-(none, source package used as is)}"
         echo "patches dropped: ${DROP_PATCHES:-(none)}"
+        if [ -n "${EXTRA_DEB_BUILD_ONLY:-}" ]; then
+            echo "build only:      $EXTRA_DEB_BUILD_ONLY (installed for the build, not shipped)"
+        fi
         if [ -n "$php_common_deb" ]; then
             echo "php-common:      $(dpkg-deb -f "$php_common_deb" Version) (deb.sury.org php-defaults $PHP_COMMON_SOURCE_VERSION rebuilt without Breaks)"
         fi

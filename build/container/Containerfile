@@ -22,7 +22,8 @@ ARG DPKG_SEARCH_WRAPPER=""
 # Optional backports suite and packages to install from it (e.g. newer debhelper)
 ARG APT_BACKPORTS_SUITE=""
 ARG BACKPORTS_PACKAGES=""
-# Optional extra .deb files (space separated URLs) installed before build-dep
+# Optional extra .deb files (space separated URLs) installed before build-dep; they ship
+# with the packages unless target.conf names them in EXTRA_DEB_BUILD_ONLY
 ARG EXTRA_DEB_URLS=""
 # If set, php-common is rebuilt from Sury's php-defaults source of this version (the .dsc
 # checksum pinned by PHP_COMMON_DSC_SHA256) as PHP_COMMON_VERSION, without its Breaks on

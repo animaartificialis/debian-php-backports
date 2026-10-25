@@ -12,7 +12,7 @@ ENV_VARS=(
     SOURCE_PACKAGE SOURCE_VERSION SOURCE_POOL_URL SOURCE_DSC_SHA256
     SURY_SOURCE_PACKAGE SURY_DEBIAN_TAR_URL SURY_DEBIAN_TAR_SHA256 SURY_PATCHES
     CHANGELOG_ENTRY TEST_PACKAGES TEST_PHP_BINARY NEW_VERSION BUILD_DEP_DSC_URL
-    APT_COMPONENTS APT_BACKPORTS_SUITE BACKPORTS_PACKAGES EXTRA_DEB_URLS CONTROL_SED RULES_SED DROP_PATCHES APT_EXTRA_CONF SOURCE_FIXUP_CMD
+    APT_COMPONENTS APT_BACKPORTS_SUITE BACKPORTS_PACKAGES EXTRA_DEB_URLS EXTRA_DEB_BUILD_ONLY CONTROL_SED RULES_SED DROP_PATCHES APT_EXTRA_CONF SOURCE_FIXUP_CMD
     PHP_COMMON_SOURCE_VERSION PHP_COMMON_VERSION
 )
 
@@ -42,7 +42,23 @@ source "$REPO_ROOT/build/build.conf"
 # shellcheck source=/dev/null
 source "$TARGET_DIR/target.conf"
 # Space separated lists may be written over several lines in target.conf.
+set -f
 EXTRA_DEB_URLS="$(echo ${EXTRA_DEB_URLS:-})"
+EXTRA_DEB_BUILD_ONLY="$(echo ${EXTRA_DEB_BUILD_ONLY:-})"
+# EXTRA_DEB_BUILD_ONLY names packages of EXTRA_DEB_URLS that are installed for the build
+# but not shipped (e.g. -dev packages no built package depends on).
+extra_names=""
+for url in $EXTRA_DEB_URLS; do
+    name="$(basename "$url" | sed 's/%2B/+/g')"
+    extra_names+=" ${name%%_*}"
+done
+for name in $EXTRA_DEB_BUILD_ONLY; do
+    if [[ "$extra_names " != *" $name "* ]]; then
+        echo "ERROR: EXTRA_DEB_BUILD_ONLY names '$name', which is not a package in EXTRA_DEB_URLS of $TARGET" >&2
+        exit 1
+    fi
+done
+set +f
 # The php-common rebuild (pins in build.conf) only happens for targets that ask for it.
 if [ "${REBUILD_PHP_COMMON:-0}" != 1 ]; then
     PHP_COMMON_SOURCE_VERSION=""; PHP_COMMON_DSC_SHA256=""; PHP_COMMON_VERSION=""

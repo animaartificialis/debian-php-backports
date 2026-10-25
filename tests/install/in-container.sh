@@ -80,6 +80,16 @@ else
 fi
 apt-get update
 
+# Every package in /dist must be installable from /dist plus the release, e.g. no
+# runtime dependency left out as build only. One at a time: php5 packages conflict.
+echo "==> Simulate installing every built package"
+while read -r pkg ver; do
+    case "$pkg" in *-dbgsym) continue ;; esac
+    apt-get install -s --no-install-recommends "$pkg=$ver" > /tmp/sim.log 2>&1 \
+        || { cat /tmp/sim.log; fail "$pkg=$ver is not installable (runtime dependency missing from /dist?)"; }
+done < <(awk '/^Package:/ { p = $2 } /^Version:/ { print p, $2 }' /tmp/repo/Packages)
+echo "OK: every built package is installable"
+
 echo "==> Upgrade to patched $TEST_PACKAGES"
 apt-get install -y --no-install-recommends "${packages[@]}"
 # Then the plain upgrade the README tells users to run: it brings the rebuilt php-common
