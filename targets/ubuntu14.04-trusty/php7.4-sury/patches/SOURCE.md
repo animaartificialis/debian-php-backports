@@ -22,10 +22,12 @@ Changes:
   deprecated gcrypt extension uses it,
 - shipped alongside: a `php-common` rebuilt from Sury's `php-defaults` source without
   its `Breaks` on older PECL extension packages (`REBUILD_PHP_COMMON=1`), bionic's
-  `libargon2-0` and `libtidy5` 5.2.0, bionic's `libpcre2` 10.31, xenial's `libpcre3`
-  8.38 and `libstdc++6` 5.3.1
-  (bionic's `libpcre2-dev` conflicts with trusty's `libpcre3-dev`, and the newer one
-  needs the newer C++ runtime), xenial's `libzip` 1.0.1 and `libsystemd` 229 (trusty
-  predates `libsystemd0`), and xenial's `apache2-dev` 2.4.18, which provides
-  `dh-apache2`. trusty's `libpcre3-dev` is purged in the builder so the newer one can
-  replace it. Everything else comes from trusty itself, including its libonig 5.9.
+  `libargon2-0`, `libtidy5` 5.2.0 and `libpcre2` 10.31 (with `libpcre2-dev`, which
+  `php7.4-dev` needs), xenial's `libzip4` 1.0.1 and `libsystemd0` 229 (trusty predates
+  `libsystemd0`), and trusty's `libgcrypt20` from universe, which `libsystemd0` needs,
+- only installed for the build (`EXTRA_DEB_BUILD_ONLY`): the argon2, tidy, libzip and
+  libsystemd `-dev` packages, trusty's `dh-systemd`, and xenial's `libpcre3` 8.38 chain
+  with its `libstdc++6` 5.3.1. Trusty's `libpcre3-dev` 1:8.31 conflicts with
+  `libpcre2-dev`, but trusty's `apache2-dev` (from trusty-updates, it provides
+  `dh-apache2`) needs a `libpcre3-dev` through `libaprutil1-dev`. Everything else comes
+  from trusty itself, including its libonig 5.9 and Apache 2.4.7.

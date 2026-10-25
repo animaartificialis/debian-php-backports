@@ -93,12 +93,11 @@ The apt component says where the source comes from, and therefore what adding it
   release he no longer builds for. Use it if you already run his PHP version on that
   release. A few dependencies newer than the release has ship in the same component: on
   stretch `libpcre2` and `libargon2-1` from buster, on xenial `libpcre2`, `libargon2-0`
-  and `libtidy5` from bionic, on trusty those three plus `libzip`, `libpcre3` 8.38,
-  `libstdc++6`, `libsystemd` and `apache2-dev` (for `dh-apache2`) from xenial, and
-  everywhere but buster a `php-common` rebuilt from
-  Sury's `php-defaults` source (next paragraph). The shipped `libpcre2` replaces the
-  older one of the release. `libpcre2-dev` ships too, because `phpX.Y-dev` needs it; the
-  argon2 and tidy `-dev` packages are only used for the build. The rebuild keeps the same
+  and `libtidy5` from bionic, on trusty those three plus `libzip4` and `libsystemd0` from
+  xenial (and trusty's own `libgcrypt20` from universe), and everywhere but buster a
+  `php-common` rebuilt from Sury's `php-defaults` source (next paragraph). The shipped
+  `libpcre2` replaces the older one of the release. `libpcre2-dev` ships too, because
+  `phpX.Y-dev` needs it; the other `-dev` packages are only used for the build. The rebuild keeps the same
   PHP extension API (`phpapi-…`), so extension packages you installed earlier (imagick,
   redis, apcu, …) keep working. Where his repository dropped the release, those can no
   longer be installed new.
@@ -115,6 +114,12 @@ The apt component says where the source comes from, and therefore what adding it
   plus the suffix, so it sorts above his binary and replaces it with a normal
   `apt-get upgrade`. Extensions that an earlier upgrade removed can then be installed
   again (from your own copy; the old repositories are gone).
+
+  *On trusty:* `php7.4-fpm` pulls in trusty's `systemd` 204 package. Its init script
+  needs `systemd-tmpfiles`; trusty still boots with upstart. Installing `php7.4-dev`
+  removes trusty's `libpcre3-dev`, because that package conflicts with `libpcre2-dev`.
+  This matters only if you build PECL extensions or other software against PCRE.
+  `libapache2-mod-php7.4` works with trusty's Apache 2.4.7.
 - **`debian<N>`** — the PHP of a *newer* Debian release built for an older one (squeeze
   gets wheezy's PHP 5.4; squeeze itself shipped 5.3). Adding it upgrades PHP to that
   version. On squeeze, PECL extension packages built for PHP 5.3 (`phpapi-20090626`) are

@@ -176,16 +176,22 @@ main() {
     # Packages index so the directory works as a local apt repository:
     #   deb [trusted=yes] file:/path/to/dir ./
     (cd "$OUT_DIR" && dpkg-scanpackages . /dev/null 2>/dev/null > Packages && gzip -9n -c Packages > Packages.gz)
-    local deps
+    # A shipped package may depend on a build-only name only if the release's own version
+    # satisfies it (e.g. libstdc++6 (>= 4.1.1)); release-versions is written by the Containerfile.
+    local dname op ver rel ok
     if [ -n "${EXTRA_DEB_BUILD_ONLY:-}" ]; then
-        deps="$(awk -F': ' '/^(Pre-)?Depends:/ { print $2 }' "$OUT_DIR/Packages" \
-            | tr ',|' '\n\n' | sed 's/([^)]*)//; s/:any//; s/^ *//; s/ *$//' | sort -u)"
-        for name in $EXTRA_DEB_BUILD_ONLY; do
-            if grep -qxF "$name" <<< "$deps"; then
-                echo "ERROR: a shipped package depends on $name, which EXTRA_DEB_BUILD_ONLY keeps out of $OUT_DIR" >&2
+        while read -r dname op ver; do
+            [[ " $EXTRA_DEB_BUILD_ONLY " == *" $dname "* ]] || continue
+            ok=0
+            while read -r rel; do
+                if [ -z "$op" ] || dpkg --compare-versions "$rel" "$op" "$ver"; then ok=1; fi
+            done < <(awk -v n="$dname" '$1 == n { print $2 }' /usr/local/share/release-versions 2>/dev/null)
+            if [ "$ok" = 0 ]; then
+                echo "ERROR: a shipped package depends on '$dname${op:+ ($op $ver)}', which EXTRA_DEB_BUILD_ONLY keeps out of $OUT_DIR and $DEBIAN_CODENAME does not have" >&2
                 exit 1
             fi
-        done
+        done < <(awk -F': ' '/^(Pre-)?Depends:/ { print $2 }' "$OUT_DIR/Packages" \
+            | tr ',|' '\n\n' | sed -E 's/:any//; s/^ *//; s/ *$//; s/ *\(([<>=]+) *([^)]*)\)/ \1 \2/' | sort -u)
     fi
     {
         echo "codename:        $DEBIAN_CODENAME"
