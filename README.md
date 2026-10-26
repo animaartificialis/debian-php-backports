@@ -192,8 +192,9 @@ apt-get install --only-upgrade 'php*'
 The repository is served over HTTPS only. Jessie needs `apt-transport-https` and
 reasonably current CA certificates. Squeeze, wheezy and trusty cannot use it: squeeze's
 OpenSSL 0.9.8 does not speak TLS 1.2, and the GnuTLS 2.12 of wheezy and trusty fails the
-TLS handshake with GitHub's servers. On these releases, use the release tarballs below,
-downloaded on another machine (GitHub's download servers reject them too).
+TLS handshake with GitHub's servers. On these releases, use the release tarballs below.
+On wheezy and trusty, `curl` (built with OpenSSL) can download them, `wget` cannot;
+on squeeze, download them on another machine.
 
 ### Download
 
