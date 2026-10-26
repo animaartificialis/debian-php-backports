@@ -11,7 +11,7 @@ PHP packages with security fixes for Debian releases that no longer receive them
 > it builds every PHP version for supported releases and gets fixes first. Nothing
 > here is built for, or should be installed on, a supported release.
 >
-> The Ubuntu targets, **Ubuntu 14.04 trusty** (PHP 7.4), **Ubuntu 16.04 xenial** (PHP 5.6, 7.3, 7.4),
+> The Ubuntu targets, **Ubuntu 14.04 trusty** (PHP 5.6, 7.4), **Ubuntu 16.04 xenial** (PHP 5.6, 7.3, 7.4),
 > **Ubuntu 18.04 bionic** (PHP 5.6, 7.2, 7.4) and **Ubuntu 20.04 focal** (PHP 5.6, 7.2, 7.4), exist
 > for the same reason: the ondrej/php PPA dropped these releases when their standard support
 > ended. On trusty that was in 2019, before PHP 7.4 existed, so there was no 7.4 build for it
@@ -61,6 +61,7 @@ but it closes both problems in a simpler way:
 | Debian 10 buster | 7.3 | — | not built here: use [Freexian ELTS](https://www.freexian.com/lts/extended/docs/how-to-use-extended-lts/) | `php7.3` | ELTS `7.3.31-1~deb10u16` |
 | Debian 10 buster | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-105+0~20261022.135+debian10~1+animaa1` |
 | Debian 10 buster | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+debian10~1+animaa1` |
+| Ubuntu 14.04 trusty | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-105+0~20261022.135+ubuntu14.04~1+animaa1` |
 | Ubuntu 14.04 trusty | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+ubuntu14.04~1+animaa1` |
 | Ubuntu 16.04 xenial | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-105+0~20261022.135+ubuntu16.04~1+animaa2` |
 | Ubuntu 16.04 xenial | 7.3 | `sury` | deb.sury.org | `php7.3` | `7.3.33-35+0~20261021.144+ubuntu16.04~1+animaa2` |
@@ -94,9 +95,10 @@ The apt component says where the source comes from, and therefore what adding it
   release. A few dependencies newer than the release has ship in the same component: on
   stretch `libpcre2` and `libargon2-1` from buster, on xenial `libpcre2`, `libargon2-0`
   and `libtidy5` from bionic, on trusty those three plus `libzip4` and `libsystemd0` from
-  xenial (and trusty's own `libgcrypt20` from universe), and everywhere but buster a
-  `php-common` rebuilt from Sury's `php-defaults` source (next paragraph). The shipped
-  `libpcre2` replaces the older one of the release. `libpcre2-dev` ships too, because
+  xenial (and trusty's own `libgcrypt20` from universe; PHP 5.6 needs only `libtidy5`
+  and `libzip4`), and everywhere but buster a `php-common` rebuilt from Sury's
+  `php-defaults` source (next paragraph). The shipped `libpcre2` replaces the older one
+  of the release. `libpcre2-dev` ships too, because
   `phpX.Y-dev` needs it; the other `-dev` packages are only used for the build. The rebuild keeps the same
   PHP extension API (`phpapi-…`), so extension packages you installed earlier (imagick,
   redis, apcu, …) keep working. Where his repository dropped the release, those can no
@@ -115,11 +117,13 @@ The apt component says where the source comes from, and therefore what adding it
   `apt-get upgrade`. Extensions that an earlier upgrade removed can then be installed
   again (from your own copy; the old repositories are gone).
 
-  *On trusty:* `php7.4-fpm` pulls in trusty's `systemd` 204 package. Its init script
-  needs `systemd-tmpfiles`; trusty still boots with upstart. Installing `php7.4-dev`
+  *On trusty:* `php7.4-fpm` and `php5.6-fpm` pull in trusty's `systemd` 204 package. Their
+  init scripts need `systemd-tmpfiles`; trusty still boots with upstart. Installing `php7.4-dev`
   removes trusty's `libpcre3-dev`, because that package conflicts with `libpcre2-dev`.
   This matters only if you build PECL extensions or other software against PCRE.
-  `libapache2-mod-php7.4` works with trusty's Apache 2.4.7.
+  PHP 5.6 uses trusty's own PCRE 8.31, so `php5.6-dev` needs that `libpcre3-dev` and
+  cannot be installed together with `php7.4-dev`. `libapache2-mod-php5.6` and
+  `libapache2-mod-php7.4` work with trusty's Apache 2.4.7.
 - **`debian<N>`** — the PHP of a *newer* Debian release built for an older one (squeeze
   gets wheezy's PHP 5.4; squeeze itself shipped 5.3). Adding it upgrades PHP to that
   version. On squeeze, PECL extension packages built for PHP 5.3 (`phpapi-20090626`) are
