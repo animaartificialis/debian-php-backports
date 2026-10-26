@@ -157,7 +157,7 @@ First set two values: your release and the component (see the table and "Compone
 above). Not sure about the release? Run `lsb_release -sc` or `cat /etc/os-release`.
 
 ```sh
-CODENAME=jessie    # your release: wheezy jessie stretch buster trusty xenial bionic focal
+CODENAME=jessie    # your release: wheezy jessie stretch buster xenial bionic focal
 COMPONENT=sury     # sury, debian or debian7 (see the table above)
 ```
 
@@ -171,7 +171,7 @@ echo "deb [signed-by=/usr/share/keyrings/debian-php-backports.gpg] https://anima
 apt-get update && apt-get upgrade
 ```
 
-Wheezy, jessie and trusty have no `signed-by` (their apt predates it); use `apt-key` and a plain line:
+Wheezy and jessie have no `signed-by` (their apt predates it); use `apt-key` and a plain line:
 
 ```sh
 wget -qO- https://animaartificialis.github.io/debian-php-backports/debian-php-backports.asc | apt-key add -
@@ -191,7 +191,8 @@ apt-get install --only-upgrade 'php*'
 
 The repository is served over HTTPS only. Wheezy and jessie need `apt-transport-https`
 and reasonably current CA certificates. Squeeze cannot use it at all: its OpenSSL 0.9.8
-does not speak TLS 1.2. On squeeze, use the release tarballs below.
+does not speak TLS 1.2. Trusty cannot use it either: the GnuTLS 2.12 of its apt fails the
+TLS handshake with GitHub Pages. On squeeze and trusty, use the release tarballs below.
 
 ### Download
 
