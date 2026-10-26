@@ -18,6 +18,9 @@
   | gpg --dearmor -o /usr/share/keyrings/debian-php-backports.gpg
 echo "deb [signed-by=/usr/share/keyrings/debian-php-backports.gpg] https://animaartificialis.github.io/debian-php-backports buster sury" \
   &gt; /etc/apt/sources.list.d/debian-php-backports.list</pre>
+<p>Debian 6 squeeze, Debian 7 wheezy and Ubuntu 14.04 trusty cannot reach this site (their TLS is too old):
+install from a <a href="https://github.com/animaartificialis/debian-php-backports/releases/latest">tarball</a>,
+see the README, "Tarball".</p>
 <p>Suites, components and older releases are described in the
 <a href="https://github.com/animaartificialis/debian-php-backports#readme">README</a>.
 <br>Debian 9 stretch and 10 buster with their own PHP (7.0, 7.3): use

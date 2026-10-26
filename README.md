@@ -47,31 +47,49 @@ but it closes both problems in a simpler way:
 
 ## Packages
 
-| Distribution | PHP | Component | Source from | Source package | Version |
-|---|---|---|---|---|---|
-| Debian 6 squeeze | 5.4 | `debian7` | Debian 7 | `php5` | `5.4.45-1+animaa2~squeeze` |
-| Debian 7 wheezy | 5.4 | `debian` | Debian 7 | `php5` | `5.4.45-0+deb7u14+animaa2` |
-| Debian 8 jessie | 5.6 | `debian` | Debian 8 | `php5` | `5.6.40+dfsg-0+deb8u12+animaa2` |
-| Debian 8 jessie | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-105+0~20261022.135+debian8~1+animaa2` |
-| Debian 8 jessie | 7.1 | `sury` | deb.sury.org | `php7.1` | `7.1.33-81+0~20261022.128+debian8~1+animaa2` |
-| Debian 9 stretch | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-105+0~20261022.135+debian9~1+animaa2` |
-| Debian 9 stretch | 7.0 | — | not built here: use [Freexian ELTS](https://www.freexian.com/lts/extended/docs/how-to-use-extended-lts/) | `php7.0` | ELTS `7.0.33-0+deb9u26` |
-| Debian 9 stretch | 7.3 | `sury` | deb.sury.org | `php7.3` | `7.3.33-35+0~20261021.144+debian9~1+animaa2` |
-| Debian 9 stretch | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+debian9~1+animaa2` |
-| Debian 10 buster | 7.3 | — | not built here: use [Freexian ELTS](https://www.freexian.com/lts/extended/docs/how-to-use-extended-lts/) | `php7.3` | ELTS `7.3.31-1~deb10u16` |
-| Debian 10 buster | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-105+0~20261022.135+debian10~1+animaa1` |
-| Debian 10 buster | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+debian10~1+animaa1` |
-| Ubuntu 14.04 trusty | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-105+0~20261022.135+ubuntu14.04~1+animaa1` |
-| Ubuntu 14.04 trusty | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+ubuntu14.04~1+animaa1` |
-| Ubuntu 16.04 xenial | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-105+0~20261022.135+ubuntu16.04~1+animaa2` |
-| Ubuntu 16.04 xenial | 7.3 | `sury` | deb.sury.org | `php7.3` | `7.3.33-35+0~20261021.144+ubuntu16.04~1+animaa2` |
-| Ubuntu 16.04 xenial | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+ubuntu16.04~1+animaa2` |
-| Ubuntu 18.04 bionic | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-105+0~20261022.135+ubuntu18.04~1+animaa2` |
-| Ubuntu 18.04 bionic | 7.2 | `sury` | deb.sury.org | `php7.2` | `7.2.34-66+0~20261021.122+ubuntu18.04~1+animaa2` |
-| Ubuntu 18.04 bionic | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+ubuntu18.04~1+animaa2` |
-| Ubuntu 20.04 focal | 5.6 | `sury` | deb.sury.org | `php5.6` | `5.6.40-105+0~20261022.135+ubuntu20.04~1+animaa2` |
-| Ubuntu 20.04 focal | 7.2 | `sury` | deb.sury.org | `php7.2` | `7.2.34-66+0~20261021.122+ubuntu20.04~1+animaa2` |
-| Ubuntu 20.04 focal | 7.4 | `sury` | deb.sury.org | `php7.4` | `1:7.4.33-31+0~20261021.121+ubuntu20.04~1+animaa2` |
+Each row is a target, named `<release>/<php>-<component>`, for example
+`debian7-wheezy/php5.4-debian`. That is its directory under `targets/`, the name of its
+tarball (`debian7-wheezy_php5.4-debian.tar.gz`) and the directory the tarball unpacks to.
+A release is always a Debian or Ubuntu release in this README. The Release column shows
+it the way target names spell it, with its apt codename after the dash.
+
+The commands under ["Installing"](#installing) take four values from this table:
+`RELEASE` is the Release column (`debian8-jessie`), `CODENAME` is its part after the dash
+(`jessie`), `COMPONENT` is the Component column (`sury`) and `TARGET` is
+`php<PHP>-<COMPONENT>` (`php5.6-sury`).
+
+| Release | PHP | Component | Source package |
+|---|---|---|---|
+| `debian6-squeeze` | 5.4 | `debian7` | `php5` |
+| `debian7-wheezy` | 5.4 | `debian` | `php5` |
+| `debian8-jessie` | 5.6 | `debian` | `php5` |
+| `debian8-jessie` | 5.6 | `sury` | `php5.6` |
+| `debian8-jessie` | 7.1 | `sury` | `php7.1` |
+| `debian9-stretch` | 5.6 | `sury` | `php5.6` |
+| `debian9-stretch` | 7.0 | — not built here, use [Freexian ELTS](https://www.freexian.com/lts/extended/docs/how-to-use-extended-lts/) | `php7.0` |
+| `debian9-stretch` | 7.3 | `sury` | `php7.3` |
+| `debian9-stretch` | 7.4 | `sury` | `php7.4` |
+| `debian10-buster` | 7.3 | — not built here, use [Freexian ELTS](https://www.freexian.com/lts/extended/docs/how-to-use-extended-lts/) | `php7.3` |
+| `debian10-buster` | 5.6 | `sury` | `php5.6` |
+| `debian10-buster` | 7.4 | `sury` | `php7.4` |
+| `ubuntu14.04-trusty` | 5.6 | `sury` | `php5.6` |
+| `ubuntu14.04-trusty` | 7.4 | `sury` | `php7.4` |
+| `ubuntu16.04-xenial` | 5.6 | `sury` | `php5.6` |
+| `ubuntu16.04-xenial` | 7.3 | `sury` | `php7.3` |
+| `ubuntu16.04-xenial` | 7.4 | `sury` | `php7.4` |
+| `ubuntu18.04-bionic` | 5.6 | `sury` | `php5.6` |
+| `ubuntu18.04-bionic` | 7.2 | `sury` | `php7.2` |
+| `ubuntu18.04-bionic` | 7.4 | `sury` | `php7.4` |
+| `ubuntu20.04-focal` | 5.6 | `sury` | `php5.6` |
+| `ubuntu20.04-focal` | 7.2 | `sury` | `php7.2` |
+| `ubuntu20.04-focal` | 7.4 | `sury` | `php7.4` |
+
+The exact package version of every target is in the notes of each
+[tag](https://github.com/animaartificialis/debian-php-backports/releases/latest) (GitHub
+releases, tagged `vYYYY.MM.DD.N`, are called tags here) and in the `BUILD-INFO.txt` of its
+tarball. Every version is the version it was built from (Debian's or deb.sury.org's) plus
+`+animaaN`, except on squeeze: `5.4.45-1+animaaN~squeeze`, built from wheezy's
+`5.4.45-0+deb7u14`.
 
 All targets are built for `amd64`. Five are also built for `arm64`: Debian 10 buster
 PHP 5.6 and 7.4, and Ubuntu 20.04 focal PHP 5.6, 7.2 and 7.4. These are the first releases that
@@ -109,7 +127,7 @@ The apt component says where the source comes from, and therefore what adding it
   `Breaks` on older versions of 42 PECL extension packages (`php-apcu` below 5.1.24,
   `php-imagick` below 3.7.0-12, `php-redis`, `php-memcached`, `php-xdebug`, …). Installed
   on an older release, it makes `apt-get` remove those extensions while upgrading PHP,
-  even the release's own versions. Releases up to `v2026.10.23.1` shipped that binary
+  even the release's own versions. Tags up to `v2026.10.23.1` shipped that binary
   (on focal too, although focal's own 2:75 would do). Now the `sury` component ships
   `php-common` rebuilt from the same `php-defaults` source with that field removed, as
   `2:101+0~20261021.78+debian11~1.gbp53f25f+animaa1` on every release: Sury's version
@@ -147,18 +165,25 @@ The apt component says where the source comes from, and therefore what adding it
 
 ## Installing
 
+Jessie and newer: use the [apt repository](#apt-repository). Squeeze, wheezy and trusty:
+use a [tarball](#tarball). They cannot reach the repository, which is served over HTTPS
+only: squeeze's OpenSSL 0.9.8 does not speak TLS 1.2, and the GnuTLS 2.12 of wheezy and
+trusty fails the TLS handshake with GitHub's servers. A tarball also works on machines
+without internet access.
+
 ### apt repository
 
 The repository is signed with a dedicated RSA 4096 key (`repo/debian-php-backports.asc`),
 fingerprint `32E9 9830 8C44 8BF6 CC57 BD7B FEE3 4861 1F66 C3D6`. RSA, because the `gpgv` of squeeze, wheezy and jessie cannot
 verify Ed25519 signatures.
 
-First set two values: your release and the component (see the table and "Components"
-above). Not sure about the release? Run `lsb_release -sc` or `cat /etc/os-release`.
+First set two values from the table under ["Packages"](#packages): the codename of your
+release and the component (see also ["Components"](#components)). Not sure which release
+you run? `lsb_release -sc` prints the codename; `cat /etc/os-release` works too.
 
 ```sh
-CODENAME=jessie    # your release: jessie stretch buster xenial bionic focal
-COMPONENT=sury     # sury or debian (see the table above)
+CODENAME=jessie    # Release column after the dash: jessie stretch buster xenial bionic focal
+COMPONENT=sury     # Component column: sury or debian
 ```
 
 Then import the key and add the repository. On stretch, buster, xenial, bionic and focal:
@@ -189,25 +214,54 @@ instead:
 apt-get install --only-upgrade 'php*'
 ```
 
-The repository is served over HTTPS only. Jessie needs `apt-transport-https` and
-reasonably current CA certificates. Squeeze, wheezy and trusty cannot use it: squeeze's
-OpenSSL 0.9.8 does not speak TLS 1.2, and the GnuTLS 2.12 of wheezy and trusty fails the
-TLS handshake with GitHub's servers. On these releases, use the release tarballs below.
-On wheezy and trusty, `curl` (built with OpenSSL) can download them, `wget` cannot;
-on squeeze, download them on another machine.
+Jessie needs `apt-transport-https` and reasonably current CA certificates.
 
-### Download
+### Tarball
 
-Every [release](https://github.com/animaartificialis/debian-php-backports/releases) has one
-tarball per target with all its `.deb` files, a `Packages` index and `BUILD-INFO.txt`.
+Every [tag](https://github.com/animaartificialis/debian-php-backports/releases) has one
+tarball per target with its `.deb` files, a `Packages` index and `BUILD-INFO.txt`.
 The `arm64` tarballs end in `_arm64.tar.gz`; all others are `amd64`.
-Check it against `SHA256SUMS` and either install the packages with `dpkg -i`, or unpack
-it and use it as a local repository (squeeze: use `dpkg -i`, its apt has no `[trusted=yes]`):
+
+The tarball is `${RELEASE}_${TARGET}.tar.gz` and unpacks to `$RELEASE/$TARGET/`, with
+`RELEASE` and `TARGET` taken from the table under ["Packages"](#packages). For the
+releases that cannot use the apt repository the values are:
+
+| `RELEASE` | `TARGET` |
+|---|---|
+| `debian6-squeeze` | `php5.4-debian7` |
+| `debian7-wheezy` | `php5.4-debian` |
+| `ubuntu14.04-trusty` | `php5.6-sury` |
+| `ubuntu14.04-trusty` | `php7.4-sury` |
+
+On wheezy and trusty, `curl` (built with OpenSSL) can download it, `wget` cannot:
 
 ```sh
-echo "deb [trusted=yes] file:/srv/debian-php-backports/debian8-jessie/php5.6-debian ./" \
-  > /etc/apt/sources.list.d/debian-php-backports.list
+RELEASE=debian7-wheezy   # from the table above
+TARGET=php5.4-debian     # from the table above
+URL=https://github.com/animaartificialis/debian-php-backports/releases/latest/download
+mkdir -p /srv/debian-php-backports && cd /srv/debian-php-backports
+curl -fsSLO "$URL/${RELEASE}_${TARGET}.tar.gz" -O "$URL/SHA256SUMS"
+grep -F "${RELEASE}_${TARGET}.tar.gz" SHA256SUMS | sha256sum -c -
+tar xzf "${RELEASE}_${TARGET}.tar.gz"
+echo "deb [trusted=yes] file:/srv/debian-php-backports/$RELEASE/$TARGET ./" \
+  > "/etc/apt/sources.list.d/debian-php-backports-$TARGET.list"
 apt-get update && apt-get upgrade
+```
+
+For a specific tag instead of the latest, replace `latest/download` with
+`download/<tag>`, for example `download/v2026.10.26.1`.
+
+Squeeze cannot download from GitHub at all: run the `curl` lines on another machine (or
+download from the tag's page), check the sum there and copy the tarball over. Its apt has no
+`[trusted=yes]`, so tell it to accept the unsigned local repository. This upgrades PHP 5.3
+to 5.4; purge `php5-suhosin` first (see ["Components"](#components)):
+
+```sh
+mkdir -p /srv/debian-php-backports
+tar -C /srv/debian-php-backports -xzf debian6-squeeze_php5.4-debian7.tar.gz
+echo "deb file:/srv/debian-php-backports/debian6-squeeze/php5.4-debian7 ./" \
+  > /etc/apt/sources.list.d/debian-php-backports.list
+apt-get update && apt-get --allow-unauthenticated dist-upgrade
 ```
 
 ## How it is built
@@ -252,7 +306,7 @@ make build-debian8-jessie/php5.6-debian    # packages land in dist/debian8-jessi
 make test                                  # install test of everything built
 ```
 
-Layout: `targets/<release>/<php>-<origin>/target.conf` describes a target,
+Layout: `targets/<release>/<php>-<component>/target.conf` describes a target,
 `build/` holds the build scripts and the builder `Containerfile`, `repo/` builds the apt
 repository, `tests/` holds the install test.
 
