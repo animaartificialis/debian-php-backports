@@ -1,1 +1,5 @@
+0253-GHSA-m33r-qmcv-p97q-soap-Fix-use-after-free-after-he.patch
+0254-GHSA-hmxp-6pc4-f3vv-soap-Fix-broken-Apache-map-value.patch
+0257-GHSA-7qg2-v9fj-4mwv-fpm-XSS-within-status-endpoint.patch
+0260-ext-openssl-openssl_encrypt-zend-mm-heap-overflow-on.patch
 0261-Avoid-state-corruption-via-bailout.patch
