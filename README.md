@@ -91,7 +91,7 @@ The commands under ["Installing"](#installing) take four values from this table:
 The exact package version of every target is in the notes of each
 [tag](https://github.com/animaartificialis/debian-php-backports/releases/latest) (GitHub
 releases, tagged `vYYYY.MM.DD.N`, are called tags here) and in the `BUILD-INFO.txt` of its
-tarball. Every version is the version it was built from (Debian's or deb.sury.org's) plus
+tarball. Every version is the version it was built from (Debian's, Freexian ELTS's or deb.sury.org's) plus
 `+animaaN`, except on squeeze: `5.4.45-1+animaaN~squeeze`, built from wheezy's
 `5.4.45-0+deb7u14`.
 
@@ -109,8 +109,10 @@ The apt component says where the source comes from, and therefore what adding it
   replaces only packages you already have, with the same version plus the fix.
   This is what most servers want. It adds this fix and the CVE-2023-0662 fix
   (`max_multipart_body_parts`) to the last official source, but not other fixes released
-  after it. On jessie, where the last Debian source is old, the `sury`
-  component has more fixes. Stretch and buster have no `debian` component: their own PHP
+  after it. On jessie the source is the last [Freexian ELTS](https://www.freexian.com/lts/extended/)
+  update instead (`5.6.40+dfsg-0+deb8u23`, April 2025), which already has ELTS's fixes up
+  to then, CVE-2023-0662 included; its version sorts above ELTS's, so apt picks it even
+  with the ELTS repository enabled. Stretch and buster have no `debian` component: their own PHP
   is fixed in [Freexian ELTS](https://www.freexian.com/lts/extended/docs/how-to-use-extended-lts/).
 - **`sury`** — Ondřej Surý's PHP packages (which already contain the fix), rebuilt for a
   release he no longer builds for. Use it if you already run his PHP version on that
