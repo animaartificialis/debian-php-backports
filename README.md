@@ -6,8 +6,8 @@ PHP packages with security fixes for Debian releases that no longer receive them
 > are a last resort: they keep PHP safer until you can upgrade. An archived release also
 > misses security fixes in many other packages, not only in PHP.
 
-> **Only for archived Debian releases: squeeze, wheezy, jessie, stretch and buster.**
-> On Debian 11 bullseye and newer, use [deb.sury.org](https://deb.sury.org/) instead —
+> **Only for archived Debian releases: squeeze, wheezy, jessie, stretch, buster and bullseye.**
+> On Debian 12 bookworm and newer, use [deb.sury.org](https://deb.sury.org/) instead —
 > it builds every PHP version for supported releases and gets fixes first. Nothing
 > here is built for, or should be installed on, a supported release.
 >
@@ -19,12 +19,15 @@ PHP packages with security fixes for Debian releases that no longer receive them
 > its own PHP 5.5 included, gets fixes from Canonical any more. Xenial's own PHP 7.0,
 > bionic's 7.2.24 and focal's 7.4.3 are still patched through Ubuntu Pro (ESM).
 >
-> **Debian 9 stretch and Debian 10 buster with their own PHP (7.0 and 7.3): use
-> [Freexian ELTS](https://www.freexian.com/lts/extended/docs/how-to-use-extended-lts/) first.** Its public repository already has the fix for
-> amd64 and more (buster also arm64), with more security fixes than a rebuild here would
+> **Debian 9 stretch, Debian 10 buster and Debian 11 bullseye with their own PHP (7.0, 7.3
+> and 7.4): use [Freexian ELTS](https://www.freexian.com/lts/extended/docs/how-to-use-extended-lts/) first.** Its public repository already has the fix for
+> amd64 and more (buster and bullseye also arm64), with more security fixes than a rebuild here would
 > have. The link explains how to add it to apt. ELTS is a service paid for by Freexian's
 > customers; the public repository comes with no guarantee. This repository does not
-> build these two.
+> build these three.
+>
+> deb.sury.org stopped updating Debian 11 bullseye in October 2026 and removes its packages
+> in November 2026 ([announcement](https://codeberg.org/oerdnj/deb.sury.org/issues/95)).
 
 [deb.sury.org](https://deb.sury.org/) builds PHP — including old PHP versions — but only for
 Debian and Ubuntu releases that are still supported. Servers running an archived release
@@ -72,6 +75,7 @@ The commands under ["Installing"](#installing) take four values from this table:
 | `debian10-buster` | 7.3 | — not built here, use [Freexian ELTS](https://www.freexian.com/lts/extended/docs/how-to-use-extended-lts/) | `php7.3` |
 | `debian10-buster` | 5.6 | `sury` | `php5.6` |
 | `debian10-buster` | 7.4 | `sury` | `php7.4` |
+| `debian11-bullseye` | 7.4 | — not built here, use [Freexian ELTS](https://www.freexian.com/lts/extended/docs/how-to-use-extended-lts/) | `php7.4` |
 | `ubuntu14.04-trusty` | 5.6 | `sury` | `php5.6` |
 | `ubuntu14.04-trusty` | 7.4 | `sury` | `php7.4` |
 | `ubuntu16.04-xenial` | 5.6 | `sury` | `php5.6` |
@@ -321,7 +325,7 @@ or closed issue already mentions are not reported again; a newer revision found 
 issue is open is added to it as a comment. A second kind of issue, labelled
 `sury-dropped`, appears when a release this README sends to Sury is gone from his archive,
 or its suite falls more than two weeks behind bookworm's (Sury refreshes every suite
-daily) — bullseye is the last such release here. Those issues never receive update
+daily). Bullseye was the last such release; Sury ended it in November 2026. Those issues never receive update
 comments. The script also runs locally: `repo/check-sury-updates.py --dry-run`.
 
 ## License
