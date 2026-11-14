@@ -1,8 +1,12 @@
 # Patch provenance
 
 No additional patches. The source is Ondřej Surý's complete
-`php7.3 7.3.33-35+0~20261021.144+debian11~1.gbpecf76f` package (packages.sury.org), whose
-`debian/patches/0139-Avoid-state-corruption-via-bailout.patch` fixes CVE-2026-109618 and CVE-2026-109619.
+`php7.3 7.3.33-37+0~deb.sury.org.1+debian12` package (packages.sury.org), whose
+`debian/patches/0143-Avoid-state-corruption-via-bailout.patch` and `0145-missing-in-previous-Avoid-state-corruption-via-bailo.patch`
+fix CVE-2026-109618 and CVE-2026-109619. Since `7.3.33-36` it also has the security fixes Sury
+backported from PHP 8.1.32 to 8.2.34 (see `debian/changelog`). Sury publishes `7.3.33-37` only for
+Debian 12/13 and Ubuntu 22.04+; the Debian 12 build is used, its `debian/` directory is the same
+as the others except for the changelog trailer.
 The `.dsc` SHA256 is pinned in `target.conf`.
 
 Changes:
