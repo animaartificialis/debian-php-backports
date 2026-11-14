@@ -93,7 +93,7 @@ The exact package version of every target is in the notes of each
 releases, tagged `vYYYY.MM.DD.N`, are called tags here) and in the `BUILD-INFO.txt` of its
 tarball. Every version is the version it was built from (Debian's, Freexian ELTS's or deb.sury.org's) plus
 `+animaaN`, except on squeeze: `5.4.45-1+animaaN~squeeze`, built from wheezy's
-`5.4.45-0+deb7u14`.
+`5.4.45-0+deb7u30`.
 
 All targets are built for `amd64`. Five are also built for `arm64`: Debian 10 buster
 PHP 5.6 and 7.4, and Ubuntu 20.04 focal PHP 5.6, 7.2 and 7.4. These are the first releases that
@@ -105,14 +105,15 @@ own PHP 7.3 already has an arm64 fix from [Freexian ELTS](https://www.freexian.c
 The apt component says where the source comes from, and therefore what adding it does:
 
 - **`debian`** — the PHP version the release itself shipped, rebuilt from the last
-  official Debian source with the fix added. A drop-in replacement: `apt-get upgrade`
+  Debian source with the fix added. A drop-in replacement: `apt-get upgrade`
   replaces only packages you already have, with the same version plus the fix.
-  This is what most servers want. It adds this fix and the CVE-2023-0662 fix
-  (`max_multipart_body_parts`) to the last official source, but not other fixes released
-  after it. On jessie the source is the last [Freexian ELTS](https://www.freexian.com/lts/extended/)
-  update instead (`5.6.40+dfsg-0+deb8u23`, April 2025), which already has ELTS's fixes up
-  to then, CVE-2023-0662 included; its version sorts above ELTS's, so apt picks it even
-  with the ELTS repository enabled. Stretch and buster have no `debian` component: their own PHP
+  This is what most servers want. That source is the last
+  [Freexian ELTS](https://www.freexian.com/lts/extended/) update, which has ELTS's fixes
+  up to then: `5.6.40+dfsg-0+deb8u23` (April 2025) on jessie, `5.4.45-0+deb7u30` (May
+  2020) on wheezy and squeeze. Added to it are this fix, the 2026 fixes for SOAP
+  (CVE-2026-7261, CVE-2026-7262) and the FPM status page (CVE-2026-6735), and on wheezy
+  and squeeze the CVE-2023-0662 fix (`max_multipart_body_parts`). The version sorts above
+  ELTS's, so apt picks it even with the ELTS repository enabled. Stretch and buster have no `debian` component: their own PHP
   is fixed in [Freexian ELTS](https://www.freexian.com/lts/extended/docs/how-to-use-extended-lts/).
 - **`sury`** — Ondřej Surý's PHP packages (which already contain the fix), rebuilt for a
   release he no longer builds for. Use it if you already run his PHP version on that
