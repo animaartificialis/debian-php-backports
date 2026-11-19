@@ -113,7 +113,9 @@ The apt component says where the source comes from, and therefore what adding it
   [Freexian ELTS](https://www.freexian.com/lts/extended/) update, which has ELTS's fixes
   up to then: `5.6.40+dfsg-0+deb8u23` (April 2025) on jessie, `5.4.45-0+deb7u30` (May
   2020) on wheezy and squeeze. Added to it are this fix, the 2026 fixes for SOAP
-  (CVE-2026-7261, CVE-2026-7262) and the FPM status page (CVE-2026-6735), and on wheezy
+  (CVE-2026-7261, CVE-2026-7262) and the FPM status page (CVE-2026-6735), the fixes of
+  PHP 8.2.36 (November 2026: CGI, FPM, session, SOAP, Phar, HTTP and FTP wrappers; see
+  each target's `patches/SOURCE.md` for which apply to 5.4), and on wheezy
   and squeeze the CVE-2023-0662 fix (`max_multipart_body_parts`). The version sorts above
   ELTS's, so apt picks it even with the ELTS repository enabled. Stretch and buster have no `debian` component: their own PHP
   is fixed in [Freexian ELTS](https://www.freexian.com/lts/extended/docs/how-to-use-extended-lts/).

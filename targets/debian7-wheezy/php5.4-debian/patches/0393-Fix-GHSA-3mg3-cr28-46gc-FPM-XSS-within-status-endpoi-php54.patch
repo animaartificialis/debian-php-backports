@@ -1,0 +1,142 @@
+From: Jakub Zelenka <bukka@php.net>
+Date: Mon, 26 Oct 2026 20:10:08 +0100
+Subject: Fix GHSA-3mg3-cr28-46gc: FPM XSS within status endpoint via user and
+ script
+
+The fix for GHSA-7qg2-v9fj-4mwv escaped only the request URI and query
+string. The request method, auth user and script filename were still
+printed raw in the full status output. Escape all of them using a common
+helper.
+
+(cherry picked from commit 1ecb92f2cdeb235bb10d6c220c9be4a13f527243)
+(cherry picked from commit 02629c6960c31adea93aa6a9e8acc69e835f3681)
+
+adapt for 8.0 and older: only the HTML/XML output is escaped there
+
+(cherry picked from commit 005bde3e8721e7b378bd1121f7fc95161ae7d60c)
+(cherry picked from commit 00922d4f0162cd16aacda20fe23b2bece79788f5)
+(cherry picked from commit 3885687db45b7675c7d357d6031cd821f2d413d0)
+(cherry picked from commit b2fdf24d77796b6b7b70f294be6c23e3d3a9d55e)
+(cherry picked from commit c26975497208a80dd19c8c4bbc557d605ce1cca8)
+(cherry picked from commit 427d38185116d96b42e4a4bf62b570369c7cad41)
+
+debian-php-backports: ported to PHP 5.4.45 (php5 5.4.45-0+deb7u30):
+fpm_status.c in 5.4 (with 0257-php54) has the same code; the code change is
+unchanged.
+---
+ sapi/fpm/fpm/fpm_status.c | 70 +++++++++++++++++++++++----------------
+ 1 file changed, 42 insertions(+), 28 deletions(-)
+
+diff --git a/sapi/fpm/fpm/fpm_status.c b/sapi/fpm/fpm/fpm_status.c
+index 1903b25c..cf8b1cdc 100644
+--- a/sapi/fpm/fpm/fpm_status.c
++++ b/sapi/fpm/fpm/fpm_status.c
+@@ -46,6 +46,22 @@ int fpm_status_init_child(struct fpm_worker_pool_s *wp) /* {{{ */
+ }
+ /* }}} */
+ 
++static char *fpm_status_escape(char *str, int encode, char **tmp TSRMLS_DC)
++{
++	size_t len;
++
++	*tmp = NULL;
++	if (str[0] == '\0') {
++		return NULL;
++	}
++	if (encode) {
++		*tmp = php_escape_html_entities_ex((unsigned char *) str, strlen(str), &len, 1,
++				ENT_DISALLOWED | ENT_HTML_DOC_XML1 | ENT_COMPAT, NULL, /* double_encode */ 1 TSRMLS_CC);
++		return *tmp;
++	}
++	return str;
++}
++
+ int fpm_status_handle_request(TSRMLS_D) /* {{{ */
+ {
+ 	struct fpm_scoreboard_s scoreboard, *scoreboard_p;
+@@ -384,8 +400,10 @@ int fpm_status_handle_request(TSRMLS_D) /* {{{ */
+ 		/* no need to test the var 'full' */
+ 		if (full_syntax) {
+ 			int i, first;
+-			size_t len, len_uri;
+-			char *query_string, *request_uri_string;
++			char *tmp_request_method_string, *tmp_request_uri_string, *tmp_query_string;
++			char *tmp_auth_user_string, *tmp_script_filename_string;
++			char *request_method_string, *request_uri_string, *query_string;
++			char *auth_user_string, *script_filename_string;
+ 			struct timeval duration, now;
+ #ifdef HAVE_FPM_LQ
+ 			float cpu;
+@@ -412,24 +430,11 @@ int fpm_status_handle_request(TSRMLS_D) /* {{{ */
+ 					}
+ 				}
+ 
+-				request_uri_string = NULL;
+-				len_uri = 0;
+-				if (proc.request_uri[0] != '\0') {
+-					if (!encode) {
+-						request_uri_string = proc.request_uri;
+-					} else {
+-						request_uri_string = php_escape_html_entities_ex((unsigned char *)proc.request_uri, strlen(proc.request_uri), &len_uri, 1, ENT_DISALLOWED | ENT_HTML_DOC_XML1 | ENT_COMPAT, NULL, 1 TSRMLS_CC);
+-					}
+-				}
+-				query_string = NULL;
+-				len = 0;
+-				if (proc.query_string[0] != '\0') {
+-					if (!encode) {
+-						query_string = proc.query_string;
+-					} else {
+-						query_string = php_escape_html_entities_ex((unsigned char *)proc.query_string, strlen(proc.query_string), &len, 1, ENT_DISALLOWED | ENT_HTML_DOC_XML1 | ENT_COMPAT, NULL, 1 TSRMLS_CC);
+-					}
+-				}
++				request_method_string = fpm_status_escape(proc.request_method, encode, &tmp_request_method_string TSRMLS_CC);
++				request_uri_string = fpm_status_escape(proc.request_uri, encode, &tmp_request_uri_string TSRMLS_CC);
++				query_string = fpm_status_escape(proc.query_string, encode, &tmp_query_string TSRMLS_CC);
++				auth_user_string = fpm_status_escape(proc.auth_user, encode, &tmp_auth_user_string TSRMLS_CC);
++				script_filename_string = fpm_status_escape(proc.script_filename, encode, &tmp_script_filename_string TSRMLS_CC);
+ 
+ #ifdef HAVE_FPM_LQ
+ 				/* prevent NaN */
+@@ -453,13 +458,13 @@ int fpm_status_handle_request(TSRMLS_D) /* {{{ */
+ 					now_epoch - proc.start_epoch,
+ 					proc.requests,
+ 					duration.tv_sec * 1000000UL + duration.tv_usec,
+-					proc.request_method[0] != '\0' ? proc.request_method : "-",
+-					request_uri_string ? request_uri_string: "-",
++					request_method_string ? request_method_string : "-",
++					request_uri_string ? request_uri_string : "-",
+ 					query_string ? "?" : "",
+ 					query_string ? query_string : "",
+ 					proc.content_length,
+-					proc.auth_user[0] != '\0' ? proc.auth_user : "-",
+-					proc.script_filename[0] != '\0' ? proc.script_filename : "-",
++					auth_user_string ? auth_user_string : "-",
++					script_filename_string ? script_filename_string : "-",
+ #ifdef HAVE_FPM_LQ
+ 					proc.request_stage == FPM_REQUEST_ACCEPTING ? cpu : 0.,
+ #endif
+@@ -467,11 +472,20 @@ int fpm_status_handle_request(TSRMLS_D) /* {{{ */
+ 				PUTS(buffer);
+ 				efree(buffer);
+ 
+-				if (len > 0 && query_string) {
+-					efree(query_string);
++				if (tmp_request_method_string) {
++					efree(tmp_request_method_string);
++				}
++				if (tmp_request_uri_string) {
++					efree(tmp_request_uri_string);
++				}
++				if (tmp_query_string) {
++					efree(tmp_query_string);
++				}
++				if (tmp_auth_user_string) {
++					efree(tmp_auth_user_string);
+ 				}
+-				if (len_uri > 0 && request_uri_string) {
+-					efree(request_uri_string);
++				if (tmp_script_filename_string) {
++					efree(tmp_script_filename_string);
+ 				}
+ 			}
+ 

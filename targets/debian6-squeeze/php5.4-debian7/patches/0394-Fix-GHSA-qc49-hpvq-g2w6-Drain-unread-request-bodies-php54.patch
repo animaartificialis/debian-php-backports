@@ -1,0 +1,86 @@
+From: Jakub Zelenka <bukka@php.net>
+Date: Thu, 29 Oct 2026 11:19:04 +0100
+Subject: Fix GHSA-qc49-hpvq-g2w6: Drain unread request bodies
+
+Opening php://input can create a request body stream without
+consuming the input from the SAPI. Request shutdown treated the
+stream as proof that the body was read and skipped the drain.
+
+Drain whenever post_read is false, independently of whether the
+stream exists. This keeps unread FastCGI STDIN bytes from being
+parsed as another request when FCGI_KEEP_CONN is set.
+
+As a final safeguard, reject a new FastCGI request if the
+previous STDIN record was only partially consumed.
+
+(cherry picked from commit 28014fd092c7acdafb9c074e735f099893a5ef66)
+(cherry picked from commit 130836964c5c26b2421891a706ebad5f0b14f713)
+(cherry picked from commit 51ec3171910cc4c9aa81bd96cadee1d99feb98f5)
+(cherry picked from commit a539b19cdc1c7d807dc0774a3168dcd20107ac13)
+(cherry picked from commit df339d81fcb940035252b1dd88fb6866c2bc179d)
+(cherry picked from commit aecf2444ca6ffd6c223726d16d0facfe8941fc6b)
+(cherry picked from commit e49ead238a7d95246bc5af24d410747e7301d413)
+(cherry picked from commit a539653a74da633fec0ab4d90dab76388a8a6bf6)
+
+adapt for 5.6: the FastCGI code lives in sapi/cgi and sapi/fpm there, the
+test needs the FPM tester and is not included
+
+debian-php-backports: ported to PHP 5.4.45 (php5 5.4.45-0+deb7u30): only the
+FastCGI safeguard in sapi/cgi/fastcgi.c and sapi/fpm/fpm/fastcgi.c is ported
+(unchanged). The main/SAPI.c hunk is dropped: 5.4 has no lazy request_body
+stream (that came with 5.6.0). Its sapi_deactivate() either has the whole
+body in post_data or reads the rest with sapi_module.read_post(), so the
+unread body bug itself does not exist in 5.4.
+---
+ sapi/cgi/fastcgi.c     | 6 ++++++
+ sapi/fpm/fpm/fastcgi.c | 6 ++++++
+ 2 files changed, 12 insertions(+)
+
+diff --git a/sapi/cgi/fastcgi.c b/sapi/cgi/fastcgi.c
+index 53e3202d..07b1e08b 100644
+--- a/sapi/cgi/fastcgi.c
++++ b/sapi/cgi/fastcgi.c
+@@ -885,6 +885,10 @@ static int fcgi_read_request(fcgi_request *req)
+ 	int len, padding;
+ 	unsigned char buf[FCGI_MAX_LENGTH+8];
+ 
++	if (UNEXPECTED(req->in_len != 0)) {
++		return 0;
++	}
++
+ 	req->keep = 0;
+ 	req->closed = 0;
+ 	req->in_len = 0;
+@@ -1138,6 +1142,8 @@ static inline void fcgi_close(fcgi_request *req, int force, int destroy)
+ 		req->nodelay = 0;
+ #endif
+ 		req->fd = -1;
++		/* a partially read STDIN record does not outlive its connection */
++		req->in_len = 0;
+ 	}
+ }
+ 
+diff --git a/sapi/fpm/fpm/fastcgi.c b/sapi/fpm/fpm/fastcgi.c
+index 80745a9c..26822f1b 100644
+--- a/sapi/fpm/fpm/fastcgi.c
++++ b/sapi/fpm/fpm/fastcgi.c
+@@ -503,6 +503,10 @@ static int fcgi_read_request(fcgi_request *req)
+ 	int len, padding;
+ 	unsigned char buf[FCGI_MAX_LENGTH+8];
+ 
++	if (UNEXPECTED(req->in_len != 0)) {
++		return 0;
++	}
++
+ 	req->keep = 0;
+ 	req->closed = 0;
+ 	req->in_len = 0;
+@@ -755,6 +759,8 @@ void fcgi_close(fcgi_request *req, int force, int destroy)
+ 		close(req->fd);
+ #endif
+ 		req->fd = -1;
++		/* a partially read STDIN record does not outlive its connection */
++		req->in_len = 0;
+ 		fpm_request_finished();
+ 	}
+ }

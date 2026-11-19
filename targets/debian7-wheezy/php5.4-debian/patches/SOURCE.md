@@ -82,3 +82,70 @@ applied; each header says what changed.
   (squeeze) do not define, so it compiles to nothing on these releases: their PHP cannot
   use wrap mode and is not affected. Carried for parity with the other targets.
   sha256 `42e39338c857cccfc6493021c2f8130ae70cbc56410c381546b62a032ab370f4`
+
+## PHP 8.2.36 fixes (added 2026-11-19)
+
+Ported from deb.sury.org php5.6 5.6.40-109 (patches 0390–0400, the backports of PHP
+8.2.36; tarball and checks as in `targets/debian8-jessie/php5.6-debian/patches/SOURCE.md`).
+Each was regenerated with `git diff` against the deb7u30 tree with all earlier patches
+applied; each header says what changed. For 11 of the 12 CVEs the 5.4 code is the same
+as in 5.6, and the code change is unchanged:
+
+| Patch | CVE | Advisory | 5.4 |
+|---|---|---|---|
+| `0390-…-php54` | CVE-2026-15353 | GHSA-q23r-hr55-xmpg | same code, applies unchanged |
+| `0391-…-php54` | CVE-2026-128090 | GHSA-68fq-fh7h-f8gr | same code, applies unchanged |
+| `0392-…-php54` | CVE-2026-129538 | GHSA-5j3f-64r7-f564 | same code, applies unchanged |
+| `0393-…-php54` | CVE-2026-129292 | GHSA-3mg3-cr28-46gc | same code (with `0257-…-php54`), applies unchanged |
+| `0394-…-php54` | CVE-2026-129289 | GHSA-qc49-hpvq-g2w6 | bug not in 5.4; only the FastCGI safeguard, see below |
+| `0395-…-php54` | CVE-2026-129506 | GHSA-4646-p932-gw34 | same code change, other context, see below |
+| `0396-…-php54` | CVE-2026-129496 | GHSA-gr4f-wgx5-jpfv | same code, applies unchanged |
+| `0397-…-php54` | CVE-2026-126714 | GHSA-fm2m-fjf5-v3cp | same code, applies unchanged |
+| `0398-…-php54` | CVE-2026-115560 | GHSA-658j-r8rw-q6mx | same code; upload progress already off through `0001` |
+| `0399-…-php54` | CVE-2026-128064 | GHSA-f6gg-rchx-xw8j | same code, other context lines |
+| `0400-…-php54` | CVE-2026-129291 | GHSA-jm4m-qfqx-967m | same code, applies unchanged |
+
+Notes:
+
+- `0394-…-php54` (CVE-2026-129289): the bug came with the lazy `php://input` stream in
+  PHP 5.6.0. In 5.4, `sapi_deactivate()` either has the whole body in `post_data` (read
+  up to `CONTENT_LENGTH`) or reads the rest with `sapi_module.read_post()` until it
+  returns 0, so an unread body cannot stay on the connection. The `main/SAPI.c` hunk is
+  dropped. Kept is the second part of the fix, the safeguard in `sapi/cgi/fastcgi.c`
+  and `sapi/fpm/fpm/fastcgi.c`: a new FastCGI request is refused (and the connection
+  closed) while the previous `FCGI_STDIN` record is only partly read.
+- `0395-…-php54`: as on jessie, `cleanup_xml_node()` is the older recursive version
+  (without Sury's GHSA-rgrp-mwpx-f6rm rewrite), so only the context differs. The new
+  `XML_DTD_NODE` branch sits before the branch that deletes non-element nodes. As in
+  5.6, only WSDL and schema loading (`soap_xmlParseFile()`) runs this cleanup, so the
+  bug is reachable through an attacker-controlled WSDL or schema, not a SOAP request.
+- `0398-…-php54` only changes the default of `session.upload_progress.enabled` to 0;
+  `0001` already turns upload progress off at run time.
+- `0400-…-php54`: as on jessie, 5.4's `fpm_child_close()` closes the pipe without
+  removing its epoll event and frees the worker record at once.
+
+Not applicable:
+
+- **CVE-2026-127960** (GHSA-mmf9-xm3v-hg2x, quadratic joining of folded HTTP response
+  headers): the code is not in 5.4. It came with the CVE-2025-1217 fix (folded header
+  support in the HTTP wrapper), which deb7u30 (2020) does not have; 5.4's HTTP wrapper
+  stores each header line as it is read. (jessie has that code from ELTS and gets an
+  own port, `0401` there.)
+
+Patch sha256:
+
+- `0390-…-php54` `b05177255b9b8d18e589ee651277c74a39529f83a09b22d950c40320983f1c92`
+- `0391-…-php54` `739d6fd807cb39698fdedf1bd74731f3dbebc24dadc687140d03049c81cdc2ba`
+- `0392-…-php54` `ee8aaa580f448cf9657e695ca8b006b07a3dc611f3d8ca69f384ac1190eba089`
+- `0393-…-php54` `9a9b98029a422180cc8fc82a370a7decf40c8ff9d4c4008bed0a4a6a14a16abb`
+- `0394-…-php54` `ba02ce3bdf0565c0517326de8e44530f6946d607a0e5b379f76d742bce83874b`
+- `0395-…-php54` `5a57edbdebd9d93f52a9fea331cfa998715f98d452e23751e5340bf44aa828fe`
+- `0396-…-php54` `9d58d0c662610260b4bfb6bdfa58bcedc87aaa3bfef7f5f47a762d7dfdab8cca`
+- `0397-…-php54` `0c65fc172d8328d2c2bc25799e8d2f0e81adacfc873b61425db9f80d258085e0`
+- `0398-…-php54` `2f018f586bb5d049b975b2d5a64599d71edab982893290d69e7d027f5e765636`
+- `0399-…-php54` `51d142776e7599bf19e65901d74829b79ce0a48b7f2c0497b63283822cb3e90d`
+- `0400-…-php54` `d63bbe3322e8e9c4a27070226db87d54ad7eb095b6beae4fde9eb46a0ccf7765`
+
+Not checked in this round: Sury's 5.6.40-106 and -107 (0264–0389) add many more
+backports that these targets do not have yet (and deb7u30 is older than all 2020+
+fixes). They need their own review.
