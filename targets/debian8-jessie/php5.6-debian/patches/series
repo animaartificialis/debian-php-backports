@@ -3,3 +3,15 @@
 0257-GHSA-7qg2-v9fj-4mwv-fpm-XSS-within-status-endpoint.patch
 0260-ext-openssl-openssl_encrypt-zend-mm-heap-overflow-on.patch
 0261-Avoid-state-corruption-via-bailout.patch
+0390-Fix-GHSA-q23r-hr55-xmpg-out-of-bounds-read-on-empty-.patch
+0391-Fix-GHSA-68fq-fh7h-f8gr-refuse-keyless-phar-signatur.patch
+0392-Fix-GHSA-5j3f-64r7-f564-PATH_INFO-underflow-in-CGI-i.patch
+0393-Fix-GHSA-3mg3-cr28-46gc-FPM-XSS-within-status-endpoi.patch
+0394-Fix-GHSA-qc49-hpvq-g2w6-Drain-unread-request-bodies.patch
+0395-Fix-GHSA-4646-p932-gw34-keep-SOAP-DTD-alive-during-c.patch
+0396-Fix-GHSA-gr4f-wgx5-jpfv-DATEG-tzcache-use-after-free.patch
+0397-Fix-GHSA-fm2m-fjf5-v3cp-RCE-via-corrupted-session-fi.patch
+0398-Fix-GHSA-658j-r8rw-q6mx-session.upload_progress.enab.patch
+0399-Fix-GHSA-f6gg-rchx-xw8j-mixed-case-HTTPS-and-FTPS.patch
+0400-Fix-GHSA-jm4m-qfqx-967m-FPM-worker-stdio-pipe-fd-clo.patch
+0401-GHSA-mmf9-xm3v-hg2x-quadratic-folded-header-concatenation.patch

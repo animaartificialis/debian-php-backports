@@ -1,0 +1,40 @@
+From: Ilija Tovilo <ilija.tovilo@me.com>
+Date: Sun, 15 Nov 2026 15:25:20 +0100
+Subject: Fix GHSA-gr4f-wgx5-jpfv: DATEG(tzcache) use-after-free
+
+(cherry picked from commit f986c5ca37c0fdc50595d8291a9920a1df23bf38)
+(cherry picked from commit b3a6786b50a3df7df665b201d45aa8dbb45b9e0e)
+(cherry picked from commit 3ea77dfbe4f451599d62ed8192720a81c1c747df)
+(cherry picked from commit 1b2a0beddcb339c2833030ab88fce55001b19321)
+(cherry picked from commit db78019ba131c6d57579db76367383d4b3cce536)
+(cherry picked from commit a9a85ddc4be3ed78b2f34120dfc1bce0432cd8f6)
+
+adapt for 7.1 and older: no zend_test extension there, the test is not included
+
+(cherry picked from commit 937b1e7da7b09fc329b7a88c4733a5ffa36e5dd8)
+(cherry picked from commit 9a98666be1d3ba6b48e20593a68ca6f6e73e4dd6)
+---
+ main/main.c | 10 +---------
+ 1 file changed, 1 insertion(+), 9 deletions(-)
+
+diff --git a/main/main.c b/main/main.c
+index 68678ae..589b5f5 100644
+--- a/main/main.c
++++ b/main/main.c
+@@ -704,15 +704,7 @@ PHPAPI void php_log_err(char *log_message TSRMLS_DC)
+ 			char *error_time_str;
+ 
+ 			time(&error_time);
+-#ifdef ZTS
+-			if (!php_during_module_startup()) {
+-				error_time_str = php_format_date("d-M-Y H:i:s e", 13, error_time, 1 TSRMLS_CC);
+-			} else {
+-				error_time_str = php_format_date("d-M-Y H:i:s e", 13, error_time, 0 TSRMLS_CC);
+-			}
+-#else
+-			error_time_str = php_format_date("d-M-Y H:i:s e", 13, error_time, 1 TSRMLS_CC);
+-#endif
++			error_time_str = php_format_date("d-M-Y H:i:s e", 13, error_time, PG(modules_activated) && EG(active) TSRMLS_CC);
+ 			len = spprintf(&tmp, 0, "[%s] %s%s", error_time_str, log_message, PHP_EOL);
+ #ifdef PHP_WIN32
+ 			php_flock(fd, 2);

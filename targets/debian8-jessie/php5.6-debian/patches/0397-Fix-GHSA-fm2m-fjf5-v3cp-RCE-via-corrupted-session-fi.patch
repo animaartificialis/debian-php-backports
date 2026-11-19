@@ -1,0 +1,39 @@
+From: Ilija Tovilo <ilija.tovilo@me.com>
+Date: Wed, 11 Nov 2026 16:53:47 +0100
+Subject: Fix GHSA-fm2m-fjf5-v3cp: RCE via corrupted session file
+
+If the session write is interrupted, and the previous session file wasn't
+truncated, we can end up with two partial sessions concatenated together. The
+approximate location of failure may be attacker-controllable in threaded
+environments if another thread causes the process to _exit().
+
+(cherry picked from commit 41c0941ae27d1033129e0e09ce3af034ffee86ba)
+(cherry picked from commit 9c5d97f5bf9548b139f94dadf9d5471b01ecfd3f)
+(cherry picked from commit 7885efe2c204c8987403696a61be24068261d495)
+(cherry picked from commit cb09392cbfc8b56ab3c717b661813bd03751c09d)
+(cherry picked from commit bc64b42b72f1bab5dc7f3cc455fca97ab7ff7bc3)
+(cherry picked from commit 53d2d1341188871582751ed8a2d119d8ef673fc5)
+(cherry picked from commit ffc409d4c29488866a0c42c5d9fc83095a127009)
+(cherry picked from commit d9b649452a8eb1e25bbe8c0d543b41f5a43b0b83)
+---
+ ext/session/mod_files.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/ext/session/mod_files.c b/ext/session/mod_files.c
+index 5c69ae3..9bf4ff6 100644
+--- a/ext/session/mod_files.c
++++ b/ext/session/mod_files.c
+@@ -414,10 +414,9 @@ PS_WRITE_FUNC(files)
+ 		return FAILURE;
+ 	}
+ 
+-	/* Truncate file if the amount of new data is smaller than the existing data set. */
+-
+-	if (vallen < (int)data->st_size) {
+-		php_ignore_value(ftruncate(data->fd, 0));
++	if (ftruncate(data->fd, 0) != 0) {
++		php_error_docref(NULL TSRMLS_CC, E_WARNING, "ftruncate() failed: %s (%d)", strerror(errno), errno);
++		return FAILURE;
+ 	}
+ 
+ #if defined(HAVE_PWRITE)

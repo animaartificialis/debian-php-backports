@@ -1,0 +1,78 @@
+From: Jakub Zelenka <bukka@php.net>
+Date: Sun, 1 Nov 2026 15:18:09 +0100
+Subject: Fix GHSA-4646-p932-gw34: keep SOAP DTD alive during cleanup
+
+(cherry picked from commit 66db5cda7df3d7a0e1fc7b171bd9ca318fca49fb)
+(cherry picked from commit 47f8976103f6022dc10d12eed151b2bc2980ac72)
+(cherry picked from commit 57d625e81be43c2f21fcfbde4d508220f50ef2a5)
+(cherry picked from commit 0289ac37e28d8be9937328980e6b82ad97937c43)
+(cherry picked from commit 43f1e582da656d8f9a213d89a03e0ea439bdaeea)
+(cherry picked from commit 877bb1d0f011fce3e91371be193699a65d89a5b7)
+(cherry picked from commit 9abe0057dec3d06c53b09ba5653aff1f5cc4c02f)
+(cherry picked from commit aa481ab4b2cc02ea2f149a7be0332d0227bae818)
+
+debian-php-backports: regenerated against php5 5.6.40+dfsg-0+deb8u23 (code
+unchanged). Only the context differs: cleanup_xml_node() here is the older
+recursive version without the GHSA-rgrp-mwpx-f6rm (CVE-2026-91765) rewrite
+that Sury's file is based on; the new XML_DTD_NODE branch sits in the same
+if/else chain, before the branch that deletes non-element nodes.
+---
+ ext/soap/php_xml.c                      |  3 +++
+ ext/soap/tests/GHSA-4646-p932-gw34.phpt | 35 +++++++++++++++++++++++++
+ 2 files changed, 38 insertions(+)
+
+diff --git a/ext/soap/php_xml.c b/ext/soap/php_xml.c
+index 36d303c8..ccff7bf2 100644
+--- a/ext/soap/php_xml.c
++++ b/ext/soap/php_xml.c
+@@ -55,6 +55,9 @@ static void cleanup_xml_node(xmlNodePtr node)
+ 			if (is_blank(trav->content)) {
+ 				del = trav;
+ 			}
++		} else if (trav->type == XML_DTD_NODE) {
++			/* Attribute-value entity references can share content with the DTD.
++			 * Keep it alive until the document itself is freed. */
+ 		} else if ((trav->type != XML_ELEMENT_NODE) &&
+ 		           (trav->type != XML_CDATA_SECTION_NODE)) {
+ 			del = trav;
+diff --git a/ext/soap/tests/GHSA-4646-p932-gw34.phpt b/ext/soap/tests/GHSA-4646-p932-gw34.phpt
+new file mode 100644
+index 00000000..8e3567d9
+--- /dev/null
++++ b/ext/soap/tests/GHSA-4646-p932-gw34.phpt
+@@ -0,0 +1,35 @@
++--TEST--
++GHSA-4646-p932-gw34: DTD entity references must not outlive their declarations
++--POST--
++<?xml version="1.0" encoding="UTF-8"?>
++<!DOCTYPE Envelope [<!ENTITY e "boom">]>
++<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
++                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
++                   xmlns:xsd="http://www.w3.org/2001/XMLSchema"
++                   xmlns:ns1="urn:t">
++  <SOAP-ENV:Header>
++    <h SOAP-ENV:actor="&e;" SOAP-ENV:mustUnderstand="1"/>
++  </SOAP-ENV:Header>
++  <SOAP-ENV:Body>
++    <ns1:echo_><param0 xsi:type="xsd:string">x</param0></ns1:echo_>
++  </SOAP-ENV:Body>
++</SOAP-ENV:Envelope>
++--EXTENSIONS--
++soap
++--FILE--
++<?php
++function echo_($x) {
++    return $x;
++}
++
++$server = new SoapServer(null, [
++    'uri' => 'urn:t',
++    'style' => SOAP_RPC,
++    'use' => SOAP_ENCODED,
++]);
++$server->addFunction('echo_');
++$server->handle();
++?>
++--EXPECT--
++<?xml version="1.0" encoding="UTF-8"?>
++<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"><SOAP-ENV:Body><SOAP-ENV:Fault><faultcode>SOAP-ENV:Server</faultcode><faultstring>DTD are not supported by SOAP</faultstring></SOAP-ENV:Fault></SOAP-ENV:Body></SOAP-ENV:Envelope>
