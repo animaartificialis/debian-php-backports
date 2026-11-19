@@ -11,7 +11,7 @@ revision breaks our build and usually carries a security fix. This script runs f
 The rules, so that nobody gets spammed when an issue sits for weeks:
 
 - Each reported update is marked in the issue text as
-  `<!-- sury-update: PACKAGE REVISION -->`. All issues with the `sury-update`
+  `<!-- sury-update: PACKAGE VERSION -->`, with Sury's full version (epoch included). All issues with the `sury-update`
   label, open and closed, with their comments, are searched for these markers.
 - An update that is marked somewhere: nothing is done.
 - New updates and an open `sury-update` issue: one comment on that issue.
@@ -20,9 +20,15 @@ The rules, so that nobody gets spammed when an issue sits for weeks:
 - Any error while reading Sury's index or the issues stops the run before anything
   is created or changed.
 
+Versions are compared whole, with dpkg: Sury's version scheme carries his own rebuilds
+after the Debian revision (`101+debsuryorg12.1+php+1`, `1:7.4.33-37+debsuryorg12.1+php+1`),
+so a no-change rebuild that replaces the pinned one in his pool is an update too. A pin is
+SOURCE_VERSION (the file-name version, without epoch) with the epoch of the target's
+NEW_VERSION, which is the epoch of the source package.
+
 It also watches the releases for which the README sends people to deb.sury.org
 (WATCHED_RELEASES). When Sury's suite for one of them is gone, or its Release file lags
-bookworm's by more than LAG_DAYS, it opens one issue with the `sury-dropped` label (marker
+REFERENCE_RELEASE's by more than LAG_DAYS, it opens one issue with the `sury-dropped` label (marker
 `<!-- sury-dropped: RELEASE -->`), so we can decide whether to build for that release
 here. Those issues are kept apart from the update issues: they never become the target
 of an update comment, and issues from before that split, which still carry the
@@ -33,7 +39,7 @@ or a dropped release found elsewhere in the list.
 For testing: --dry-run prints the planned action instead of calling gh, --targets DIR
 reads pins from another directory, --issues FILE takes the issues from a JSON file
 (same shape as `gh issue list --json number,state,body,comments,labels`), and
---simulate PACKAGE=REVISION pretends that all targets of PACKAGE pin REVISION, so the
+--simulate PACKAGE=VERSION pretends that all targets of PACKAGE pin VERSION, so the
 whole path, including real issues, can be tried. Issues from a simulated run say so
 in the title and text.
 """
@@ -52,23 +58,30 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SOURCES_URL = "https://packages.sury.org/php/dists/bookworm/main/source/Sources.gz"
+# The suite the pins come from; targets/ and build/build.conf pin its sources.
+SOURCE_SUITE = "bookworm"
+SOURCES_URL = f"https://packages.sury.org/php/dists/{SOURCE_SUITE}/main/source/Sources.gz"
 LABEL = "sury-update"
 LABEL_DESCRIPTION = "Newer revision of a pinned deb.sury.org source"
 DROPPED_LABEL = "sury-dropped"
 DROPPED_LABEL_DESCRIPTION = "deb.sury.org stopped building for a release the README sends there"
 MARKER = re.compile(r"<!-- sury-update: (\S+) (\S+) -->")
 DROPPED = re.compile(r"<!-- sury-dropped: (\S+) -->")
-# Releases the README sends to deb.sury.org; Sury has said he will stop building bullseye.
-WATCHED_RELEASES = ["bullseye"]
+# Releases the README sends to deb.sury.org, oldest first. Bullseye was frozen in
+# November 2026; bookworm is now the oldest, and also the suite the pins come from.
+WATCHED_RELEASES = ["bookworm"]
 # A watched suite is dropped when its Release file lags this suite's by more than LAG_DAYS.
-REFERENCE_RELEASE = "bookworm"
+# It must be a newer suite than every watched one, or a frozen archive looks current.
+REFERENCE_RELEASE = "trixie"
 LAG_DAYS = 14
 
 
-def revision(version):
-    """Sury's own revision of a version: '1:7.4.33-31+0~2026...' -> '7.4.33-31'."""
-    return version.split(":", 1)[-1].split("+", 1)[0]
+def with_epoch(version, epoch_from):
+    """version with the epoch of epoch_from, unless it has its own:
+    ('7.4.33-37+debsuryorg12.1+php+1', '1:7.4.33-31+...+animaa2') -> '1:7.4.33-37+...'."""
+    if ":" in version or ":" not in (epoch_from or ""):
+        return version
+    return epoch_from.split(":", 1)[0] + ":" + version
 
 
 def newer(a, b):
@@ -76,28 +89,30 @@ def newer(a, b):
 
 
 def read_pins(targets_dir):
-    """{package: {revision: [target, ...]}} from the targets that use Sury's pool."""
+    """{package: {version: [target, ...]}} from the targets that use Sury's pool."""
     pins = {}
     common = None
     conf = targets_dir.parent / "build" / "build.conf"
     if conf.is_file():
         m = re.search(r"^PHP_COMMON_SOURCE_VERSION=(\S+)", conf.read_text(), re.M)
-        common = revision(m.group(1)) if m else None
+        common = m.group(1) if m else None
     for conf in sorted(targets_dir.glob("*/*/target.conf")):
         target = conf.parent.relative_to(targets_dir).as_posix()
         text = conf.read_text()
         pkg = re.search(r"^SOURCE_PACKAGE=(\S+)", text, re.M)
         ver = re.search(r"^SOURCE_VERSION=(\S+)", text, re.M)
         url = re.search(r"^SOURCE_POOL_URL=(\S+)", text, re.M)
+        new = re.search(r'^NEW_VERSION="?([^"\s]+)', text, re.M)
         if pkg and ver and url and "packages.sury.org" in url.group(1):
-            pins.setdefault(pkg.group(1), {}).setdefault(revision(ver.group(1)), []).append(target)
+            pinned = with_epoch(ver.group(1), new.group(1) if new else None)
+            pins.setdefault(pkg.group(1), {}).setdefault(pinned, []).append(target)
         if common and re.search(r"^REBUILD_PHP_COMMON=1", text, re.M):
             pins.setdefault("php-defaults", {}).setdefault(common, []).append(target)
     return pins
 
 
 def read_sury(packages):
-    """{package: newest revision} from Sury's Sources index."""
+    """{package: newest version} from Sury's Sources index."""
     with urllib.request.urlopen(SOURCES_URL, timeout=60) as r:
         text = gzip.decompress(r.read()).decode("utf-8", "replace")
     found = {}
@@ -105,9 +120,8 @@ def read_sury(packages):
         pkg = re.search(r"^Package: (\S+)", stanza, re.M)
         ver = re.search(r"^Version: (\S+)", stanza, re.M)
         if pkg and ver and pkg.group(1) in packages:
-            rev = revision(ver.group(1))
-            if pkg.group(1) not in found or newer(rev, found[pkg.group(1)]):
-                found[pkg.group(1)] = rev
+            if pkg.group(1) not in found or newer(ver.group(1), found[pkg.group(1)]):
+                found[pkg.group(1)] = ver.group(1)
     return found
 
 
@@ -163,7 +177,7 @@ def dropped_releases():
 
 
 def find_updates(pins, sury):
-    """[(package, [old revision, ...], new revision, [target, ...]), ...]"""
+    """[(package, [old version, ...], new version, [target, ...]), ...]"""
     updates = []
     for pkg, revs in sorted(pins.items()):
         new = sury.get(pkg)
@@ -278,15 +292,15 @@ def main():
     ap.add_argument("--dry-run", action="store_true", help="print the planned action, do not call gh")
     ap.add_argument("--targets", type=Path, default=ROOT / "targets", help="directory with the targets")
     ap.add_argument("--issues", type=Path, help="JSON file with issues instead of asking GitHub")
-    ap.add_argument("--simulate", action="append", default=[], metavar="PACKAGE=REVISION",
-                    help="pretend that all targets of PACKAGE pin REVISION (testing only)")
+    ap.add_argument("--simulate", action="append", default=[], metavar="PACKAGE=VERSION",
+                    help="pretend that all targets of PACKAGE pin VERSION (testing only)")
     args = ap.parse_args()
 
     pins = read_pins(args.targets)
     for item in args.simulate:
         pkg, _, rev = item.partition("=")
         if pkg not in pins or not rev:
-            sys.exit(f"--simulate: unknown package or empty revision: {item!r}")
+            sys.exit(f"--simulate: unknown package or empty version: {item!r}")
         pins[pkg] = {rev: sorted(t for ts in pins[pkg].values() for t in ts)}
     test = " [TEST, simulated pins: " + ", ".join(args.simulate) + "]" if args.simulate else ""
     if not pins:
