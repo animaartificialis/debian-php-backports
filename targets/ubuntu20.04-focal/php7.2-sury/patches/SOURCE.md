@@ -1,14 +1,15 @@
 # Patch provenance
 
 No additional patches. The source is Ondřej Surý's complete
-`php7.2 7.2.34-66+0~20261021.122+debian12~1.gbpe0bcd4` package (packages.sury.org), whose
-`debian/patches/0159-Avoid-state-corruption-via-bailout.patch` fixes CVE-2026-109618 and CVE-2026-109619.
+`php7.2 7.2.34-70+debsuryorg12.1+php+1` package (packages.sury.org), whose
+`debian/patches/0160-Avoid-state-corruption-via-bailout.patch` fixes CVE-2026-109618 and CVE-2026-109619.
+Since `7.2.34-69` it also has the security fixes Sury backported from PHP 8.2.36, such as CVE-2026-129538 and CVE-2026-129496 (see `debian/changelog`).
 The `.dsc` SHA256 is pinned in `target.conf`.
 
 Changes:
 
-- the secure-DNS telemetry patch `0144` is dropped from the series,
-- shipped alongside: `php-common` rebuilt from Sury's `php-defaults` 101+0~20261021.78+debian12~1.gbp53f25f
+- the secure-DNS telemetry patch `0143` and its follow-up `0257` are dropped from the series,
+- shipped alongside: `php-common` rebuilt from Sury's `php-defaults` 101+debsuryorg12.1+php+1
   (`.dsc` SHA256 pinned in `build/build.conf`) without the `Breaks` field of `php-common`:
   it lists older PECL extension packages (`php-apcu (<< 5.1.24-1~)`, `php-imagick
   (<< 3.7.0-12~)`, …) that do not work with PHP 8, and would make apt remove working
