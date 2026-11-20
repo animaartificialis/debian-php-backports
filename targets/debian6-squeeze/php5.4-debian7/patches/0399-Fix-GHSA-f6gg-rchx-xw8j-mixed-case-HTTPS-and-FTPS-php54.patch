@@ -28,7 +28,7 @@ change is unchanged; only the context lines differ.
  4 files changed, 97 insertions(+), 2 deletions(-)
 
 diff --git a/ext/standard/ftp_fopen_wrapper.c b/ext/standard/ftp_fopen_wrapper.c
-index 27390a10..ffc2c5be 100644
+index 27390a1..ffc2c5b 100644
 --- a/ext/standard/ftp_fopen_wrapper.c
 +++ b/ext/standard/ftp_fopen_wrapper.c
 @@ -148,7 +148,7 @@ static php_stream *php_ftp_fopen_connect(php_stream_wrapper *wrapper, char *path
@@ -41,11 +41,11 @@ index 27390a10..ffc2c5be 100644
  	/* use port 21 if one wasn't specified */
  	if (resource->port == 0)
 diff --git a/ext/standard/http_fopen_wrapper.c b/ext/standard/http_fopen_wrapper.c
-index 901a9b8d..86dbd40e 100644
+index 3741ef8..6921b58 100644
 --- a/ext/standard/http_fopen_wrapper.c
 +++ b/ext/standard/http_fopen_wrapper.c
-@@ -175,7 +175,7 @@ php_stream *php_stream_url_wrap_http_ex(php_stream_wrapper *wrapper, char *path,
- 			return NULL;
+@@ -185,7 +185,7 @@ php_stream *php_stream_url_wrap_http_ex(php_stream_wrapper *wrapper, char *path,
+ 			zval_dtor(&ztmp);
  		}
  
 -		use_ssl = resource->scheme && (strlen(resource->scheme) > 4) && resource->scheme[4] == 's';
@@ -55,7 +55,7 @@ index 901a9b8d..86dbd40e 100644
  			resource->port = 443;
 diff --git a/ext/standard/tests/http/ghsa-f6gg-rchx-xw8j.phpt b/ext/standard/tests/http/ghsa-f6gg-rchx-xw8j.phpt
 new file mode 100644
-index 00000000..11bfa680
+index 0000000..11bfa68
 --- /dev/null
 +++ b/ext/standard/tests/http/ghsa-f6gg-rchx-xw8j.phpt
 @@ -0,0 +1,61 @@
@@ -122,7 +122,7 @@ index 00000000..11bfa680
 +TLS
 diff --git a/ext/standard/tests/streams/ghsa-f6gg-rchx-xw8j.phpt b/ext/standard/tests/streams/ghsa-f6gg-rchx-xw8j.phpt
 new file mode 100644
-index 00000000..8c700150
+index 0000000..8c70015
 --- /dev/null
 +++ b/ext/standard/tests/streams/ghsa-f6gg-rchx-xw8j.phpt
 @@ -0,0 +1,34 @@

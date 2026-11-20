@@ -12,32 +12,31 @@ Subject: Fix GHSA-4646-p932-gw34: keep SOAP DTD alive during cleanup
 (cherry picked from commit aa481ab4b2cc02ea2f149a7be0332d0227bae818)
 
 debian-php-backports: ported to PHP 5.4.45 (php5 5.4.45-0+deb7u30): the code
-change is unchanged. Only the context differs: cleanup_xml_node() here is the
-older recursive version without the GHSA-rgrp-mwpx-f6rm (CVE-2026-91765)
-rewrite that Sury's file is based on; the new XML_DTD_NODE branch sits in the
-same if/else chain, before the branch that deletes non-element nodes.
+change is unchanged. This replaces our earlier port of this fix, which was
+written against the older recursive cleanup_xml_node(); Sury's patch applies
+unchanged now that 0296 (GHSA-rgrp-mwpx-f6rm) is in.
 ---
  ext/soap/php_xml.c                      |  3 +++
  ext/soap/tests/GHSA-4646-p932-gw34.phpt | 35 +++++++++++++++++++++++++
  2 files changed, 38 insertions(+)
 
 diff --git a/ext/soap/php_xml.c b/ext/soap/php_xml.c
-index bf30ab40..a83a741d 100644
+index ad0cf68..94fd064 100644
 --- a/ext/soap/php_xml.c
 +++ b/ext/soap/php_xml.c
-@@ -55,6 +55,9 @@ static void cleanup_xml_node(xmlNodePtr node)
- 			if (is_blank(trav->content)) {
- 				del = trav;
+@@ -53,6 +53,9 @@ static void cleanup_xml_node(xmlNodePtr node)
+ 				xmlUnlinkNode(trav);
+ 				xmlFreeNode(trav);
  			}
 +		} else if (trav->type == XML_DTD_NODE) {
 +			/* Attribute-value entity references can share content with the DTD.
 +			 * Keep it alive until the document itself is freed. */
  		} else if ((trav->type != XML_ELEMENT_NODE) &&
  		           (trav->type != XML_CDATA_SECTION_NODE)) {
- 			del = trav;
+ 			xmlUnlinkNode(trav);
 diff --git a/ext/soap/tests/GHSA-4646-p932-gw34.phpt b/ext/soap/tests/GHSA-4646-p932-gw34.phpt
 new file mode 100644
-index 00000000..8e3567d9
+index 0000000..8e3567d
 --- /dev/null
 +++ b/ext/soap/tests/GHSA-4646-p932-gw34.phpt
 @@ -0,0 +1,35 @@
