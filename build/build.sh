@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Host driver: build the builder image and/or the patched PHP packages for a target.
 # Usage: build/build.sh <release>/<php> [image|build|all], e.g. debian8-jessie/php5.6-debian
+#
+# Packages go to dist/<release>/<php>/ (dist-<arch>/ for architectures other than amd64).
+# The amd64 build also puts the exact sources it used into sources/<release>/<php>/
+# (kept out of dist/, which the apt repository is made from).
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -110,6 +114,8 @@ v="APT_SECURITY_MIRROR_$ARCH"; APT_SECURITY_MIRROR="${!v:-$APT_SECURITY_MIRROR}"
 IMAGE="php-backport-builder:${TARGET//\//-}-$ARCH"
 DIST_DIR="$REPO_ROOT/$DIST_ROOT/$TARGET"
 CACHE_DIR="$REPO_ROOT/cache/$TARGET"
+# Not dist-sources/: dist-*/ directories are taken for architectures.
+SOURCES_DIR="$REPO_ROOT/sources/$TARGET"
 
 PLATFORM_ARG=()
 if [ "$ARCH" = "amd64" ]; then
@@ -195,11 +201,71 @@ build_packages() {
         "$IMAGE"
 }
 
+sha256_of() {
+    sha256sum "$1" | cut -d' ' -f1
+}
+
+# copy_dsc <dsc name> <expected dsc sha256> <dest dir>: copy a source package (the .dsc and
+# every file in its Checksums-Sha256 section) from the cache, verifying each file again.
+copy_dsc() {
+    local dsc="$1" expected="$2" dest="$3" sha name count=0
+    if [ ! -f "$CACHE_DIR/$dsc" ] || [ "$(sha256_of "$CACHE_DIR/$dsc")" != "$expected" ]; then
+        echo "ERROR: $CACHE_DIR/$dsc is missing or does not match its pinned sha256" >&2
+        exit 1
+    fi
+    mkdir -p "$dest"
+    cp "$CACHE_DIR/$dsc" "$dest/"
+    while read -r sha name; do
+        if [ ! -f "$CACHE_DIR/$name" ] || [ "$(sha256_of "$CACHE_DIR/$name")" != "$sha" ]; then
+            echo "ERROR: $CACHE_DIR/$name (from $dsc) is missing or does not match the .dsc" >&2
+            exit 1
+        fi
+        cp "$CACHE_DIR/$name" "$dest/"
+        count=$((count + 1))
+    done < <(awk '/^Checksums-Sha256:/ { s = 1; next } s && /^ / { print $1, $3; next } s { s = 0 }' "$CACHE_DIR/$dsc")
+    [ "$count" -gt 0 ] || { echo "ERROR: no files listed in $dsc" >&2; exit 1; }
+}
+
+# Keep the sources a build used: upstream pools drop old revisions (deb.sury.org keeps
+# only the newest), and a pin whose source is gone can never be rebuilt. Sources are the
+# same on every architecture, so only the amd64 build collects them.
+collect_sources() {
+    [ "$ARCH" = amd64 ] || return 0
+    echo "==> Collecting the sources of $TARGET into $SOURCES_DIR"
+    rm -rf "$SOURCES_DIR"
+    mkdir -p "$SOURCES_DIR"
+    copy_dsc "${SOURCE_PACKAGE}_${SOURCE_VERSION}.dsc" "$SOURCE_DSC_SHA256" "$SOURCES_DIR/upstream"
+    if [ -n "${PHP_COMMON_SOURCE_VERSION:-}" ]; then
+        copy_dsc "php-defaults_${PHP_COMMON_SOURCE_VERSION}.dsc" "$PHP_COMMON_DSC_SHA256" "$SOURCES_DIR/php-defaults"
+    fi
+    # The target's target.conf, patches and SOURCE.md, plus the global build settings.
+    mkdir -p "$SOURCES_DIR/target"
+    cp -a "$TARGET_DIR/." "$SOURCES_DIR/target/"
+    cp "$REPO_ROOT/build/build.conf" "$SOURCES_DIR/build.conf"
+    {
+        echo "Sources of the $TARGET packages of debian-php-backports"
+        echo "($(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || echo 'commit unknown'))."
+        echo
+        echo "upstream/      the source package, as pinned in target/target.conf:"
+        echo "               $SOURCE_PACKAGE $SOURCE_VERSION from $SOURCE_POOL_URL"
+        if [ -n "${PHP_COMMON_SOURCE_VERSION:-}" ]; then
+            echo "php-defaults/  the php-common source, as pinned in build.conf:"
+            echo "               php-defaults $PHP_COMMON_SOURCE_VERSION from deb.sury.org"
+        fi
+        echo "target/        target.conf and the patches added to debian/patches/series"
+        echo "build.conf     global build settings"
+        echo
+        echo "Unpack with: dpkg-source -x upstream/${SOURCE_PACKAGE}_${SOURCE_VERSION}.dsc"
+    } > "$SOURCES_DIR/README.txt"
+    (cd "$SOURCES_DIR" && find . -type f ! -name SHA256SUMS -printf '%P\n' | LC_ALL=C sort \
+        | xargs -d '\n' sha256sum > SHA256SUMS)
+}
+
 START_TIME="$(date +%s)"
 case "$ACTION" in
     image) build_image ;;
-    build) build_packages ;;
-    all) build_image; build_packages ;;
+    build) build_packages; collect_sources ;;
+    all) build_image; build_packages; collect_sources ;;
     *) usage ;;
 esac
 ELAPSED=$(( $(date +%s) - START_TIME ))

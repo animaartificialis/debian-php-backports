@@ -95,6 +95,7 @@ jobs:
         id: name
         run: |
           echo "name=${TARGET//\//_}@$ARCH" >> "$GITHUB_OUTPUT"
+          echo "source_name=${TARGET//\//_}@source" >> "$GITHUB_OUTPUT"
           if [ "$ARCH" = amd64 ]; then echo "path=dist/$TARGET/"; else echo "path=dist-$ARCH/$TARGET/"; fi >> "$GITHUB_OUTPUT"
         env:
           TARGET: ${{ matrix.target }}
@@ -103,6 +104,14 @@ jobs:
         with:
           name: ${{ steps.name.outputs.name }}
           path: ${{ steps.name.outputs.path }}
+          if-no-files-found: error
+      # The sources the packages were built from; the same on every architecture, so only
+      # the amd64 build collects them (build/build.sh).
+      - uses: actions/upload-artifact@v4
+        if: matrix.arch == 'amd64'
+        with:
+          name: ${{ steps.name.outputs.source_name }}
+          path: sources/${{ matrix.target }}/
           if-no-files-found: error
 
   publish:
@@ -120,15 +129,16 @@ jobs:
           path: artifacts
       - name: Require at least one built target
         run: ls artifacts/*/ >/dev/null
-      - name: Restore dist/<release>/<php> and dist-<arch>/<release>/<php> layout
+      - name: Restore dist/<release>/<php>, dist-<arch>/<release>/<php> and sources/<release>/<php> layout
         run: |
           for a in artifacts/*/; do
             n="$(basename "$a")"; arch="${n##*@}"; t="$(sed 's#_#/#' <<<"${n%@*}")"
-            root=dist; [ "$arch" = amd64 ] || root="dist-$arch"
+            case "$arch" in amd64) root=dist ;; source) root=sources ;; *) root="dist-$arch" ;; esac
             mkdir -p "$root/$t" && cp -a "$a". "$root/$t/"
           done
       - name: Release tarballs
         run: |
+          set -o pipefail
           mkdir -p release
           for root in dist dist-*; do
             [ -d "$root" ] || continue
@@ -137,6 +147,14 @@ jobs:
               t="${d#"$root"/}"; t="${t%/}"
               tar -C "$root" -czf "release/${t//\//_}${suffix}.tar.gz" "$t"
             done
+          done
+          # Source tarballs, made reproducibly: same files, same tarball.
+          mtime="$(git log -1 --format=%ct)"
+          for d in sources/*/*/; do
+            [ -d "$d" ] || continue
+            t="${d#sources/}"; t="${t%/}"
+            tar -C sources --sort=name --owner=0 --group=0 --numeric-owner --mtime="@$mtime" -cf - "$t" \
+              | gzip -9n > "release/${t//\//_}_source.tar.gz"
           done
           (cd release && sha256sum ./*.tar.gz > SHA256SUMS)
       - name: Release notes
@@ -154,7 +172,8 @@ jobs:
             done
             echo
             echo "Install from the apt repository, or download a target tarball below and"
-            echo "verify it against \`SHA256SUMS\`. See the README for details."
+            echo "verify it against \`SHA256SUMS\`. Each \`*_source.tar.gz\` holds the exact"
+            echo "sources and patches its target was built from. See the README for details."
           } > release-notes.md
       - name: GitHub release
         env:

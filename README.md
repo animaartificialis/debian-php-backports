@@ -301,6 +301,13 @@ from archived Debian or deb.sury.org sources pinned by SHA256:
 
 The upstream test suite is skipped (`nocheck`); it takes hours on these releases.
 
+Old source versions disappear from the upstream archives, so every release also has a
+`${RELEASE}_${TARGET}_source.tar.gz` for each target. It holds the exact sources the
+packages were built from: the `.dsc` with its tarballs, the `php-defaults` source for
+`php-common` where it is rebuilt, and the target's `target.conf` and patches. Check it
+against `SHA256SUMS` like the other tarballs; `dpkg-source -x` unpacks the `.dsc` offline.
+A local build puts the same files in `sources/<release>/<php>/`.
+
 Two kinds of changes go beyond adding the fix, each recorded in the target's `SOURCE.md`:
 
 - Sury's packages carry a "secure DNS telemetry" patch. It is dropped from every `sury`

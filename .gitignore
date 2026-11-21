@@ -1,6 +1,7 @@
 /dist/
 /dist-*/
 /cache/
+/sources/
 /tests/.env
 .DS_Store
 __pycache__/
