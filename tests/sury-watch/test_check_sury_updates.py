@@ -251,6 +251,19 @@ class PinsTest(unittest.TestCase):
         found = {u[0]: u[2] for u in sury.find_updates(self.pins, index)}
         self.assertEqual(found, {"php5.6": "5.6.40-109+debsuryorg12.1+php+2"})
 
+    def test_suffix_without_php_is_an_update(self):
+        # Sury dropped "+php" from his suffix in November 2026: 5.6.40-110+debsuryorg12.1+1.
+        # The higher Debian revision decides, and once pinned it is no update any more.
+        index = {"php5.6": "5.6.40-110+debsuryorg12.1+1",
+                 "php7.4": "1:7.4.33-31+0~20261021.121+debian12~1.gbpe9c428",
+                 "php-defaults": "102+debsuryorg12.1+3"}
+        found = {u[0]: u[2] for u in sury.find_updates(self.pins, index)}
+        self.assertEqual(found, {"php5.6": "5.6.40-110+debsuryorg12.1+1",
+                                 "php-defaults": "102+debsuryorg12.1+3"})
+        pinned = {"php5.6": {"5.6.40-110+debsuryorg12.1+1": ["ubuntu20.04-focal/php5.6-sury"]},
+                  "php-defaults": {"102+debsuryorg12.1+3": ["ubuntu20.04-focal/php5.6-sury"]}}
+        self.assertEqual(sury.find_updates(pinned, index), [])
+
     def test_without_the_epoch_a_lower_revision_is_no_update(self):
         # A pin read without its epoch would make any epoch-1 version look newer.
         index = {"php7.4": "1:7.4.33-30+debsuryorg12.1+php+1",

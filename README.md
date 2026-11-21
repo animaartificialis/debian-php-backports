@@ -94,8 +94,8 @@ releases, tagged `vYYYY.MM.DD.N`, are called tags here) and in the `BUILD-INFO.t
 tarball. Every version is the version it was built from (Debian's, Freexian ELTS's or deb.sury.org's) plus
 `+animaaN`, except on squeeze: `5.4.45-1+animaaN~squeeze`, built from wheezy's
 `5.4.45-0+deb7u30`. The `sury` targets also put the release before that suffix, for example
-`5.6.40-109+debsuryorg12.1+php+1+debian10+animaa1` on buster, built from Sury's Debian 12
-`5.6.40-109+debsuryorg12.1+php+1`.
+`5.6.40-110+debsuryorg12.1+1+debian10+animaa1` on buster, built from Sury's Debian 12
+`5.6.40-110+debsuryorg12.1+1`.
 
 All targets are built for `amd64`. Five are also built for `arm64`: Debian 10 buster
 PHP 5.6 and 7.4, and Ubuntu 20.04 focal PHP 5.6, 7.2 and 7.4. These are the first releases that
@@ -143,7 +143,7 @@ The apt component says where the source comes from, and therefore what adding it
   even the release's own versions. Tags up to `v2026.10.23.1` shipped that binary
   (on focal too, although focal's own 2:75 would do). Now the `sury` component ships
   `php-common` rebuilt from the same `php-defaults` source with that field removed, as
-  `2:101+debsuryorg12.1+php+1+animaa1` on every release: Sury's version
+  `2:102+debsuryorg12.1+3+animaa1` on every release: Sury's version
   plus the suffix, so it sorts above his binary and replaces it with a normal
   `apt-get upgrade`. Extensions that an earlier upgrade removed can then be installed
   again (from your own copy; the old repositories are gone).
