@@ -63,6 +63,18 @@ for name in $EXTRA_DEB_BUILD_ONLY; do
     fi
 done
 set +f
+# BASE_TARGET (set by target.conf, which also sources the base target's target.conf): a
+# variant of another target. The build applies the base target's patches/series first and
+# then the variant's own patches/series, so the base patches are not copied.
+PATCH_DIR="$TARGET_DIR/patches"
+BASE_TARGET_DIR=""
+if [ -n "${BASE_TARGET:-}" ]; then
+    BASE_TARGET_DIR="$REPO_ROOT/targets/$BASE_TARGET"
+    if [ ! -f "$BASE_TARGET_DIR/patches/series" ]; then
+        echo "ERROR: BASE_TARGET '$BASE_TARGET' of $TARGET has no patches/series" >&2
+        exit 1
+    fi
+fi
 # The php-common rebuild (pins in build.conf) only happens for targets that ask for it.
 if [ "${REBUILD_PHP_COMMON:-0}" != 1 ]; then
     PHP_COMMON_SOURCE_VERSION=""; PHP_COMMON_DSC_SHA256=""; PHP_COMMON_VERSION=""
@@ -179,6 +191,26 @@ build_packages() {
         printf '%s=%s\n' "$var" "${!var:-}" >> "$env_file"
     done
 
+    # A variant gets one patch directory: the base target's patches, then its own, with
+    # one series listing both in that order.
+    local target_mount="$TARGET_DIR"
+    if [ -n "$BASE_TARGET_DIR" ]; then
+        target_mount="$tmp_dir/target"
+        mkdir -p "$target_mount/patches"
+        cp -a "$BASE_TARGET_DIR/patches/." "$target_mount/patches/"
+        local f
+        for f in "$PATCH_DIR"/*; do
+            case "$(basename "$f")" in series|SOURCE.md) continue ;; esac
+            if [ -e "$target_mount/patches/$(basename "$f")" ]; then
+                echo "ERROR: $(basename "$f") is in both $BASE_TARGET and $TARGET" >&2
+                exit 1
+            fi
+            cp -a "$f" "$target_mount/patches/"
+        done
+        cat "$BASE_TARGET_DIR/patches/series" "$PATCH_DIR/series" > "$target_mount/patches/series"
+        cp "$TARGET_DIR/target.conf" "$target_mount/"
+    fi
+
     echo "==> Building packages in $IMAGE using $CONTAINER_TYPE (output: $DIST_DIR)"
     local run_opts=("${PLATFORM_ARG[@]}")
     if [ "$CONTAINER_TYPE" = "podman" ]; then
@@ -194,7 +226,7 @@ build_packages() {
     "$CONTAINER_CLI" run --rm \
         "${run_opts[@]}" \
         --env-file "$env_file" \
-        -v "$TARGET_DIR:/target:ro" \
+        -v "$target_mount:/target:ro" \
         -v "$REPO_ROOT/build/container/build-in-container.sh:/usr/local/bin/build-in-container.sh:ro" \
         -v "$CACHE_DIR:/cache" \
         -v "$DIST_DIR:/out" \
@@ -241,6 +273,10 @@ collect_sources() {
     # The target's target.conf, patches and SOURCE.md, plus the global build settings.
     mkdir -p "$SOURCES_DIR/target"
     cp -a "$TARGET_DIR/." "$SOURCES_DIR/target/"
+    if [ -n "$BASE_TARGET_DIR" ]; then
+        mkdir -p "$SOURCES_DIR/base-target"
+        cp -a "$BASE_TARGET_DIR/." "$SOURCES_DIR/base-target/"
+    fi
     cp "$REPO_ROOT/build/build.conf" "$SOURCES_DIR/build.conf"
     {
         echo "Sources of the $TARGET packages of debian-php-backports"
@@ -253,6 +289,10 @@ collect_sources() {
             echo "               php-defaults $PHP_COMMON_SOURCE_VERSION from deb.sury.org"
         fi
         echo "target/        target.conf and the patches added to debian/patches/series"
+        if [ -n "$BASE_TARGET_DIR" ]; then
+            echo "base-target/   the target this one is a variant of ($BASE_TARGET): its patches"
+            echo "               are added first, then the ones in target/ (both series in order)"
+        fi
         echo "build.conf     global build settings"
         echo
         echo "Unpack with: dpkg-source -x upstream/${SOURCE_PACKAGE}_${SOURCE_VERSION}.dsc"

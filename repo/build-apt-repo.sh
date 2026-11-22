@@ -9,6 +9,7 @@
 #   debian8-jessie/php5.6-debian   ->  suite jessie, component debian
 #   debian9-stretch/php7.3-sury    ->  suite stretch, component sury
 #   debian6-squeeze/php5.4-debian7 ->  suite squeeze, component debian7
+#   debian7-wheezy/php5.4-debian-extended -> suite wheezy, component debian-extended
 #
 # so a server that only wants the fixed build of its own PHP version adds just the
 # "debian" component and is never offered another PHP version.
