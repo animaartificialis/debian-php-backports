@@ -64,7 +64,9 @@ The commands under ["Installing"](#installing) take four values from this table:
 | Release | PHP | Component | Source package |
 |---|---|---|---|
 | `debian6-squeeze` | 5.4 | `debian7` | `php5` |
+| `debian6-squeeze` | 5.4 | `debian7-extended` (see [PHP 5.4 extended](#php-54-extended-wheezy-squeeze)) | `php5` |
 | `debian7-wheezy` | 5.4 | `debian` | `php5` |
+| `debian7-wheezy` | 5.4 | `debian-extended` (see [PHP 5.4 extended](#php-54-extended-wheezy-squeeze)) | `php5` |
 | `debian8-jessie` | 5.6 | `debian` | `php5` |
 | `debian8-jessie` | 5.6 | `sury` | `php5.6` |
 | `debian8-jessie` | 7.1 | `sury` | `php7.1` |
@@ -160,6 +162,48 @@ The apt component says where the source comes from, and therefore what adding it
   version. On squeeze, PECL extension packages built for PHP 5.3 (`phpapi-20090626`) are
   removed by the upgrade, and `php5-suhosin` must be purged first. Use `apt-get dist-upgrade`.
 
+### PHP 5.4 extended (wheezy, squeeze)
+
+Most users want the normal 5.4 targets. The `-extended` targets are the same build
+plus some security fixes that are too big or too risky for the normal ones:
+
+- mysqlnd: CVE-2024-8929 and CVE-2025-1218 (a malicious MySQL server could read
+  memory of the PHP process),
+- HTTP stream wrapper: CVE-2025-1736, CVE-2026-91766 and CVE-2025-1861 (user headers,
+  credentials sent on after a redirect to another site, long redirect URLs),
+- Phar: CVE-2019-9675 (hardening only on 5.4).
+
+CVE-2021-21703 (PHP-FPM, local root) is not fixed in either variant.
+
+The risk: these are larger changes, ported by hand, and less tested. Some behaviour
+changes, as in newer PHP versions:
+
+- A malformed MySQL packet gives a warning and the query fails.
+- In the `header` option of the `http` stream context, put each header on its own line
+  ending with `\r\n`. A header after a bare `\n` is no longer seen, so PHP adds its
+  own Host, User-Agent or Authorization as well.
+- After a redirect to another host, port or scheme, the Authorization and Cookie
+  headers from the `header` option are not sent any more.
+- Writing a tar-based phar with a symlink target of 100 bytes or more fails.
+
+See `targets/debian7-wheezy/php5.4-debian-extended/patches/SOURCE.md` for details.
+
+To use it, take the `-extended` tarball (or component) instead of the normal one; the
+commands under ["Installing"](#installing) are the same. Its version is the normal
+version plus `+ext1` (`5.4.45-0+deb7u30+animaa3+ext1`), so `apt-get upgrade` installs
+it over the normal packages.
+
+To switch back, point the apt line at the normal tarball again. `apt-get upgrade` does
+not go back by itself while the extended version is the higher one, so downgrade
+the PHP packages to the normal version (this needs the normal tarball of the same
+tag; if the normal version is newer, `apt-get upgrade` is enough):
+
+```sh
+apt-get update
+apt-get install $(dpkg-query -W -f='${Status} ${Package}=${Version}\n' \
+  | awk '/ installed / && /\+ext/ {print $4}' | sed 's/+ext[0-9]*//')
+```
+
 ### Verifying the fixes
 
 - **CVE-2023-0662** (`max_multipart_body_parts` DoS limit):
@@ -242,7 +286,9 @@ releases that cannot use the apt repository the values are:
 | `RELEASE` | `TARGET` |
 |---|---|
 | `debian6-squeeze` | `php5.4-debian7` |
+| `debian6-squeeze` | `php5.4-debian7-extended` |
 | `debian7-wheezy` | `php5.4-debian` |
+| `debian7-wheezy` | `php5.4-debian-extended` |
 | `ubuntu14.04-trusty` | `php5.6-sury` |
 | `ubuntu14.04-trusty` | `php7.4-sury` |
 
