@@ -77,3 +77,22 @@ packet.
 Behaviour change: such packets now give a warning ("Field length is too short for the
 field type", "Incomplete null bitmap", "OK packet ... shorter than expected") and the
 fetch or command fails.
+
+## CVE-2025-1736: HTTP wrapper user header checks
+
+`CVE-2025-1736-php54.patch` = ELTS `CVE-2025-1736/01` to `04` (the same as Sury's
+`0274` to `0277`: bug #79265, two follow-ups and GHSA-hgf5-96fm-v528) as one patch with
+the end result. The HTTP wrapper decides whether the user already set Host,
+User-Agent, Authorization, From, Content-Length or Content-Type by searching the
+`header` context option. It also matched these names inside other headers' values and
+after a bare LF, so PHP could drop the Basic auth of the URL or send Host twice.
+
+- `check_has_header()` as in `04`, used for the six checks 5.4 has (5.4 has no
+  Connection header check); the Proxy-Authorization check as in `03`.
+- The tests of `01` and `03` are kept without the "Connection: close" line (5.4 does
+  not send it). The three tests of `04` need `ServerClientTestCase-8.1.inc`, which
+  5.4 does not have, and are dropped; the reproducer covers the same cases.
+
+Behaviour change, as upstream: a header in the `header` option counts as the user's
+own only at the start or after CRLF. A header after a bare LF, or after a space or tab,
+is no longer seen, so PHP adds its own Host, User-Agent or Authorization as well.
