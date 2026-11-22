@@ -96,3 +96,22 @@ after a bare LF, so PHP could drop the Basic auth of the URL or send Host twice.
 Behaviour change, as upstream: a header in the `header` option counts as the user's
 own only at the start or after CRLF. A header after a bare LF, or after a space or tab,
 is no longer seen, so PHP adds its own Host, User-Agent or Authorization as well.
+
+## CVE-2026-91766: credentials on cross-origin redirects
+
+`0294-…-php54.patch` = Sury's `0294` (GHSA-fpwc-w8rq-cr92). It needs the
+CVE-2025-1736 patch first, as in Sury's order (`0274`–`0277` before `0294`). With
+`follow_location`, the HTTP wrapper sent the Authorization, Cookie and
+Proxy-Authorization headers of the `header` option on to the redirect target, also
+when that was another origin.
+
+- The `http_fopen_wrapper.c` hunks apply unchanged (line offsets only).
+- The `bug61548.phpt` hunk is applied by hand to the 5.4 form of the test.
+- The new test uses PHP 7 syntax and PHP 8's `server.inc`, so it does not run on 5.4;
+  it is kept as shipped. The reproducer covers it.
+
+Behaviour change, as upstream: after a redirect to another scheme, host or port, the
+Authorization and Cookie headers (and Proxy-Authorization when no proxy is used) from
+the `header` option are no longer sent, also on later same-origin hops of that chain.
+Other user headers are still sent. `strip_header()` now also removes repeated and
+folded headers, and a POST redirect no longer leaves an empty line in the request.
