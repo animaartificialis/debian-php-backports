@@ -10,17 +10,27 @@
 
 function http_capture_start($port, array $responses)
 {
-    $cmd = escapeshellarg(PHP_BINARY) . ' -n ' . escapeshellarg(__FILE__) . ' http_capture_server '
-        . (int) $port . ' ' . escapeshellarg(base64_encode(serialize($responses)));
-    $process = proc_open($cmd, array(0 => array('pipe', 'r'), 1 => array('pipe', 'w'), 2 => STDERR), $pipes);
-    if (!is_resource($process)) {
-        throw new Exception('cannot start the HTTP server');
+    // The port can still be busy: the server of the case before waits up to 10 seconds
+    // for a connection that may never come. So keep trying for a while.
+    for ($try = 1; ; $try++) {
+        $cmd = escapeshellarg(PHP_BINARY) . ' -n ' . escapeshellarg(__FILE__) . ' http_capture_server '
+            . (int) $port . ' ' . escapeshellarg(base64_encode(serialize($responses)));
+        $process = proc_open($cmd, array(0 => array('pipe', 'r'), 1 => array('pipe', 'w'), 2 => STDERR), $pipes);
+        if (!is_resource($process)) {
+            throw new Exception('cannot start the HTTP server');
+        }
+        $line = fgets($pipes[1]);
+        if (trim($line) === 'READY') {
+            return array($process, $pipes);
+        }
+        fclose($pipes[0]);
+        fclose($pipes[1]);
+        proc_close($process);
+        if ($try >= 15) {
+            throw new Exception("HTTP server did not start: $line");
+        }
+        sleep(1);
     }
-    $line = fgets($pipes[1]);
-    if (trim($line) !== 'READY') {
-        throw new Exception("HTTP server did not start: $line");
-    }
-    return array($process, $pipes);
 }
 
 function http_capture_stop(array $server)

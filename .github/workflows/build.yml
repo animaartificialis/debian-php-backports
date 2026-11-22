@@ -116,8 +116,9 @@ jobs:
 
   publish:
     # Only tagged releases are published; branch builds just prove the targets build.
-    # Targets that failed are left out instead of blocking the ones that passed.
-    if: ${{ !cancelled() && startsWith(github.ref, 'refs/tags/v') }}
+    # Every build must pass: the apt repository is rebuilt from this run's packages only,
+    # so a missing target would vanish from it. Re-run the failed jobs to publish.
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     needs: build
     runs-on: ubuntu-24.04
     permissions:
