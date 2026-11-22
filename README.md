@@ -64,9 +64,9 @@ The commands under ["Installing"](#installing) take four values from this table:
 | Release | PHP | Component | Source package |
 |---|---|---|---|
 | `debian6-squeeze` | 5.4 | `debian7` | `php5` |
-| `debian6-squeeze` | 5.4 | `debian7-extended` (see [PHP 5.4 extended](#php-54-extended-wheezy-squeeze)) | `php5` |
+| `debian6-squeeze` | 5.4 | `debian7-compat` (see [PHP 5.4 compat](#php-54-compat-wheezy-squeeze)) | `php5` |
 | `debian7-wheezy` | 5.4 | `debian` | `php5` |
-| `debian7-wheezy` | 5.4 | `debian-extended` (see [PHP 5.4 extended](#php-54-extended-wheezy-squeeze)) | `php5` |
+| `debian7-wheezy` | 5.4 | `debian-compat` (see [PHP 5.4 compat](#php-54-compat-wheezy-squeeze)) | `php5` |
 | `debian8-jessie` | 5.6 | `debian` | `php5` |
 | `debian8-jessie` | 5.6 | `sury` | `php5.6` |
 | `debian8-jessie` | 7.1 | `sury` | `php7.1` |
@@ -120,7 +120,9 @@ The apt component says where the source comes from, and therefore what adding it
   each target's `patches/SOURCE.md` for which apply to 5.4), and on wheezy
   and squeeze the CVE-2023-0662 fix (`max_multipart_body_parts`) and most of the fixes
   from 2020 to 2026 that their 2020 ELTS source lacks (ported from ELTS's jessie PHP 5.6
-  and from Sury's php5.6). The version sorts above
+  and from Sury's php5.6). On wheezy and squeeze this includes six larger fixes for
+  mysqlnd, the HTTP stream wrapper and Phar, which change some behaviour (see
+  [PHP 5.4 compat](#php-54-compat-wheezy-squeeze)). The version sorts above
   ELTS's, so apt picks it even with the ELTS repository enabled. Stretch and buster have no `debian` component: their own PHP
   is fixed in [Freexian ELTS](https://www.freexian.com/lts/extended/docs/how-to-use-extended-lts/).
 - **`sury`** — Ondřej Surý's PHP packages (which already contain the fix), rebuilt for a
@@ -162,10 +164,13 @@ The apt component says where the source comes from, and therefore what adding it
   version. On squeeze, PECL extension packages built for PHP 5.3 (`phpapi-20090626`) are
   removed by the upgrade, and `php5-suhosin` must be purged first. Use `apt-get dist-upgrade`.
 
-### PHP 5.4 extended (wheezy, squeeze)
+### PHP 5.4 compat (wheezy, squeeze)
 
-Most users want the normal 5.4 targets. The `-extended` targets are the same build
-plus some security fixes that are too big or too risky for the normal ones:
+Most users want the normal 5.4 targets. Read this only if an application breaks
+after the upgrade to `5.4.45-0+deb7u30+animaa4` (wheezy) or `5.4.45-1+animaa6~squeeze`
+(squeeze).
+
+These versions have six larger security fixes:
 
 - mysqlnd: CVE-2024-8929 and CVE-2025-1218 (a malicious MySQL server could read
   memory of the PHP process),
@@ -173,10 +178,7 @@ plus some security fixes that are too big or too risky for the normal ones:
   credentials sent on after a redirect to another site, long redirect URLs),
 - Phar: CVE-2019-9675 (hardening only on 5.4).
 
-CVE-2021-21703 (PHP-FPM, local root) is not fixed in either variant.
-
-The risk: these are larger changes, ported by hand, and less tested. Some behaviour
-changes, as in newer PHP versions:
+They change some behaviour, as in newer PHP versions:
 
 - A malformed MySQL packet gives a warning and the query fails.
 - In the `header` option of the `http` stream context, put each header on its own line
@@ -186,24 +188,33 @@ changes, as in newer PHP versions:
   headers from the `header` option are not sent any more.
 - Writing a tar-based phar with a symlink target of 100 bytes or more fails.
 
-See `targets/debian7-wheezy/php5.4-debian-extended/patches/SOURCE.md` for details.
+The `-compat` targets are the same build without these six fixes. Use them only if an
+application breaks on one of these changes, and only until it is fixed. They are less
+secure: the six bugs stay open. See the "Larger fixes" section of
+`targets/debian7-wheezy/php5.4-debian/patches/SOURCE.md` for details.
 
-To use it, take the `-extended` tarball (or component) instead of the normal one; the
-commands under ["Installing"](#installing) are the same. Its version is the normal
-version plus `+ext1` (`5.4.45-0+deb7u30+animaa3+ext1` on wheezy,
-`5.4.45-1+animaa5+ext1~squeeze` on squeeze), so `apt-get upgrade` installs
-it over the normal packages.
-
-To switch back, point the apt line at the normal tarball again. `apt-get upgrade` does
-not go back by itself while the extended version is the higher one, so downgrade
-the PHP packages to the normal version (this needs the normal tarball of the same
-tag; if the normal version is newer, `apt-get upgrade` is enough):
+To switch, take the `-compat` tarball instead of the normal one (`TARGET=php5.4-debian-compat`
+on wheezy, `php5.4-debian7-compat` on squeeze; see ["Tarball"](#tarball)) and replace the
+apt line of the normal one. Its version is the normal version with `~compat1`
+(`5.4.45-0+deb7u30+animaa4~compat1`, `5.4.45-1+animaa6~compat1~squeeze`). That sorts
+below the normal version, so `apt-get upgrade` does not install it. Downgrade the PHP
+packages instead (this needs the compat tarball of the same tag as the installed normal
+packages):
 
 ```sh
 apt-get update
 apt-get install $(dpkg-query -W -f='${Status} ${Package}=${Version}\n' \
-  | awk '/ installed / && /\+ext/ {print $4}' | sed 's/+ext[0-9]*//')
+  | awk '/ installed / && /\+animaa/ && !/~compat/ {print $4}' \
+  | sed 's/+animaa\([0-9]*\)/+animaa\1~compat1/')
 ```
+
+To switch back, point the apt line at the normal tarball again and run
+`apt-get update && apt-get upgrade`. The normal version is the higher one.
+
+Tags `v2026.11.23` to `v2026.11.23.2` had `-extended` targets with these six fixes.
+They are gone, because the normal targets now have the same fixes. If you used one,
+point the apt line back at the normal tarball and run `apt-get update && apt-get upgrade`.
+The new normal version sorts above the old extended one, so this is a plain upgrade.
 
 ### Verifying the fixes
 
@@ -287,9 +298,9 @@ releases that cannot use the apt repository the values are:
 | `RELEASE` | `TARGET` |
 |---|---|
 | `debian6-squeeze` | `php5.4-debian7` |
-| `debian6-squeeze` | `php5.4-debian7-extended` |
+| `debian6-squeeze` | `php5.4-debian7-compat` (see [PHP 5.4 compat](#php-54-compat-wheezy-squeeze)) |
 | `debian7-wheezy` | `php5.4-debian` |
-| `debian7-wheezy` | `php5.4-debian-extended` |
+| `debian7-wheezy` | `php5.4-debian-compat` (see [PHP 5.4 compat](#php-54-compat-wheezy-squeeze)) |
 | `ubuntu14.04-trusty` | `php5.6-sury` |
 | `ubuntu14.04-trusty` | `php7.4-sury` |
 
