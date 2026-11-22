@@ -272,7 +272,8 @@ collect_sources() {
     fi
     # The target's target.conf, patches and SOURCE.md, plus the global build settings.
     mkdir -p "$SOURCES_DIR/target"
-    cp -a "$TARGET_DIR/." "$SOURCES_DIR/target/"
+    # -L: a variant may share its patches/ with another variant through a symlink.
+    cp -aL "$TARGET_DIR/." "$SOURCES_DIR/target/"
     if [ -n "$BASE_TARGET_DIR" ]; then
         mkdir -p "$SOURCES_DIR/base-target"
         cp -a "$BASE_TARGET_DIR/." "$SOURCES_DIR/base-target/"
