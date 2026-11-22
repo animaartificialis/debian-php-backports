@@ -132,3 +132,11 @@ limit for Location and its tests are not needed (5.4 never takes a Location long
 than about 1000 bytes; as before, a longer Location header is ignored).
 
 No behaviour change, except that long redirect URLs are now followed in full.
+
+## CVE-2021-21703: not fixed
+
+The FPM scoreboard fix (ELTS `CVE-2021-21703.patch`, deb8u15) is not part of this
+variant. PHP 5.4 lays out the scoreboard differently from 5.6, so half of the patch
+has to be rewritten by hand, and it changes how the FPM master process manages
+shared memory. That could not be tested well enough here to ship it. It is left
+for a later round.
