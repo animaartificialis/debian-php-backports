@@ -115,3 +115,20 @@ Authorization and Cookie headers (and Proxy-Authorization when no proxy is used)
 the `header` option are no longer sent, also on later same-origin hops of that chain.
 Other user headers are still sent. `strip_header()` now also removes repeated and
 folded headers, and a POST redirect no longer leaves an empty line in the request.
+
+## CVE-2025-1861: HTTP redirect URL truncation
+
+`CVE-2025-1861-php54.patch` is written for 5.4 (GHSA-52jp-hrpf-2jff). ELTS's patch
+(upstream `ac1a054`) sits on the response header parser of CVE-2025-1217, which 5.4
+does not have.
+
+In 5.4 the response headers are read in 1024 byte blocks and a longer header line is
+skipped as a whole, so the Location value itself is never cut. The truncation is in
+building the redirect URL: the relative Location and the current path were joined into
+1024 byte buffers with `snprintf()`, so a long redirect URL was cut off and the next
+request went to a different URL. As upstream, these buffers are now allocated
+(`spprintf()`); the URL is freed at the end of the function. Upstream's 8182 byte
+limit for Location and its tests are not needed (5.4 never takes a Location longer
+than about 1000 bytes; as before, a longer Location header is ignored).
+
+No behaviour change, except that long redirect URLs are now followed in full.

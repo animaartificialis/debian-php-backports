@@ -3,3 +3,4 @@ CVE-2024-8929-php54.patch
 CVE-2025-1218-php54.patch
 CVE-2025-1736-php54.patch
 0294-Fix-GHSA-fpwc-w8rq-cr92-strip-credentials-from-user-hea-php54.patch
+CVE-2025-1861-php54.patch
