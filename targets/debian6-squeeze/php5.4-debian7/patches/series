@@ -57,3 +57,9 @@ GHSA-4w77-75f9-2c8w-php54.patch
 0398-Fix-GHSA-658j-r8rw-q6mx-session.upload_progress.enab-php54.patch
 0399-Fix-GHSA-f6gg-rchx-xw8j-mixed-case-HTTPS-and-FTPS-php54.patch
 0400-Fix-GHSA-jm4m-qfqx-967m-FPM-worker-stdio-pipe-fd-clo-php54.patch
+CVE-2019-9675-php54.patch
+CVE-2024-8929-php54.patch
+CVE-2025-1218-php54.patch
+CVE-2025-1736-php54.patch
+0294-Fix-GHSA-fpwc-w8rq-cr92-strip-credentials-from-user-hea-php54.patch
+CVE-2025-1861-php54.patch

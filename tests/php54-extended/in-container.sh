@@ -44,6 +44,6 @@ echo "fixed: $fixed, not fixed: $unfixed, errors: $errors"
 [ "$errors" -eq 0 ] || exit 1
 case "$EXPECT" in
     fixed) [ "$unfixed" -eq 0 ] || { echo "FAIL: some fixes are missing"; exit 1; } ;;
-    unfixed) [ "$fixed" -eq 0 ] || { echo "FAIL: a normal target has an extended-only fix"; exit 1; } ;;
+    unfixed) [ "$fixed" -eq 0 ] || { echo "FAIL: a -compat target has one of the fixes it leaves out"; exit 1; } ;;
 esac
 echo "OK ($EXPECT)"
