@@ -35,3 +35,26 @@ fix in deb7u30), so the unchecked copy into the 100 byte `linkname` field cannot
 overflow. The fix is kept as hardening. Behaviour change, as upstream: writing a
 tar-based phar whose symlink target is 100 bytes or longer now fails with "link ... is
 too long for format" instead of writing a link name without a terminating NUL.
+
+## CVE-2024-8929: mysqlnd heap over-read
+
+`CVE-2024-8929-php54.patch` = ELTS `CVE-2024-8929/01` to `05` in one patch (the same
+fix as Sury's `0267`, `0268` and `0311`; GHSA-h35g-vwh6-m678). A malicious or fake
+MySQL server could make mysqlnd read past the end of a packet and so leak heap memory
+to the PHP script (field defaults, the LOCAL INFILE name, the OK message, prepared
+statement rows, text rows on 32 bit, the auth plugin name).
+
+- `mysqlnd_ps_codec.c`: the checks are added by hand, because the 5.4 fetch functions
+  take an extra `as_unicode` argument. The helpers get `TSRMLS_DC` (as Sury's).
+- `mysqlnd_wireprotocol.c`: the auth response, result set header and field hunks and
+  `02` (auth plugin name) apply unchanged. The binary row hunk is by hand; it uses
+  `row_buffer->app`, the data size, as Sury's `0311` does. After a malformed row, the
+  fields decoded so far are freed and all fields set to NULL (ELTS sets them to NULL
+  without freeing strings already decoded, a small leak).
+- `mysqlnd_result.c`: as upstream.
+- The tests and `fake_server.inc` are unchanged.
+
+Behaviour change: a malformed packet now gives a warning ("Malformed server packet",
+"... is past the packet size") and the query or fetch fails, instead of returning data
+read from outside the packet. Well-formed rows are read as before (the reproducer
+checks this for all field types, binary and text protocol).
