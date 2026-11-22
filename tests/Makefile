@@ -8,4 +8,4 @@ export
 
 -include */include.mk
 
-test: test-install
+test: test-install test-php54-extended
