@@ -1,6 +1,7 @@
 <?php
 // Fake MySQL server from PHP's own tests (ext/mysqli/tests/fake_server.inc, added by
-// the GHSA-h35g-vwh6-m678 fix, commit 2f5aa9f, with c70b97d, 51f5539 and eb951b3).
+// the GHSA-h35g-vwh6-m678 fix, commit 2f5aa9f, with c70b97d, 51f5539 and eb951b3), with
+// the scenarios of deb.sury.org php5.6 0322 and 0323 (CVE-2025-1218).
 // Copied unchanged below this header.
 
 function my_mysqli_data_fields()
@@ -719,6 +720,54 @@ function my_mysqli_test_stmt_response_row_over_read_string(my_mysqli_fake_server
     $conn->read();
     $conn->send($conn->packets_to_bytes($rh), "Malicious Stmt Response for items [Extract heap through buffer over-read]");
     $conn->read(65536);
+}
+
+function my_mysqli_test_ok_message_length_past_packet(my_mysqli_fake_server_conn $conn)
+{
+    $p = $conn->packet_generator->server_ok();
+    $p->packet_number = '01';
+    $p->packet_length = '080000';
+    $p->message_len = '10';
+
+    $conn->send_server_greetings();
+    $conn->read();
+    $conn->send_server_ok();
+    $conn->read();
+    $conn->send($p->to_bytes(), 'OK message length past packet');
+    $conn->read();
+}
+
+function my_mysqli_test_stmt_response_row_short_length(my_mysqli_fake_server_conn $conn, $field_name)
+{
+    $rh = $conn->packet_generator->server_stmt_execute_data_response($field_name);
+    /* The declared length cannot cover the fixed offsets of this field type. */
+    $rh[4]->packet_length = '090000';
+    $rh[4]->row_field2 = '01de';
+
+    $conn->send_server_greetings();
+    $conn->read();
+    $conn->send_server_ok();
+    $conn->read();
+    $conn->send_server_stmt_prepare_data_response($field_name);
+    $conn->read();
+    $conn->send($conn->packets_to_bytes($rh),
+        "Malicious Stmt Response for data $field_name [length too short]");
+    $conn->read(65536);
+}
+
+function my_mysqli_test_stmt_response_row_short_length_date(my_mysqli_fake_server_conn $conn)
+{
+    my_mysqli_test_stmt_response_row_short_length($conn, 'datval');
+}
+
+function my_mysqli_test_stmt_response_row_short_length_time(my_mysqli_fake_server_conn $conn)
+{
+    my_mysqli_test_stmt_response_row_short_length($conn, 'timval');
+}
+
+function my_mysqli_test_stmt_response_row_short_length_datetime(my_mysqli_fake_server_conn $conn)
+{
+    my_mysqli_test_stmt_response_row_short_length($conn, 'dtival');
 }
 
 function my_mysqli_test_stmt_response_row_over_read_two_fields(

@@ -58,3 +58,22 @@ Behaviour change: a malformed packet now gives a warning ("Malformed server pack
 "... is past the packet size") and the query or fetch fails, instead of returning data
 read from outside the packet. Well-formed rows are read as before (the reproducer
 checks this for all field types, binary and text protocol).
+
+## CVE-2025-1218: mysqlnd temporal fields and OK message
+
+`CVE-2025-1218-php54.patch` = Sury's `0322` + `0323` in one patch
+(GHSA-r6x9-5r99-36j7). It needs the CVE-2024-8929 patch (it extends its checks), so it
+comes after it. A binary DATE, TIME or DATETIME value shorter than its fixed layout,
+and an OK message longer than the OK packet, made mysqlnd read past the field or
+packet.
+
+- `mysqlnd_ps_codec.c`: the helper and the three length checks are placed by hand
+  (other context); the offset changes apply unchanged.
+- `mysqlnd_wireprotocol.c`: the null bitmap check comes after the zvals of the row are
+  created, and on failure they are set to NULL, so that the row can be freed as usual
+  (Sury's returns before they exist). The OK packet hunk applies unchanged.
+- NEWS hunks dropped; the tests apply unchanged.
+
+Behaviour change: such packets now give a warning ("Field length is too short for the
+field type", "Incomplete null bitmap", "OK packet ... shorter than expected") and the
+fetch or command fails.
