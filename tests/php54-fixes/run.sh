@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Runs the reproducers in cases/ against the built packages of a PHP 5.4 target.
-# Usage: tests/php54-extended/run.sh <release>/<php> [fixed|unfixed|report]
+# Usage: tests/php54-fixes/run.sh <release>/<php> [fixed|unfixed|report]
 #   fixed:   every case must report FIXED (normal 5.4 targets)
 #   unfixed: no case may report FIXED (-compat targets)
 #   report:  only print the results
