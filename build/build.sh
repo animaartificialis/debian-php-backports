@@ -35,16 +35,17 @@ if [ ! -f "$TARGET_DIR/target.conf" ]; then
     echo "ERROR: unknown target '$TARGET' ($TARGET_DIR/target.conf not found)" >&2
     usage
 fi
-if [ ! -f "$TARGET_DIR/patches/series" ]; then
-    echo "ERROR: $TARGET_DIR/patches/series not found." >&2
-    echo "Run first: build/fetch-sury-patches.sh $TARGET" >&2
-    exit 1
-fi
 
 # shellcheck source=build.conf
 source "$REPO_ROOT/build/build.conf"
 # shellcheck source=/dev/null
 source "$TARGET_DIR/target.conf"
+# A variant (BASE_TARGET, below) may have no patches of its own.
+if [ -z "${BASE_TARGET:-}" ] && [ ! -f "$TARGET_DIR/patches/series" ]; then
+    echo "ERROR: $TARGET_DIR/patches/series not found." >&2
+    echo "Run first: build/fetch-sury-patches.sh $TARGET" >&2
+    exit 1
+fi
 # Space separated lists may be written over several lines in target.conf.
 set -f
 EXTRA_DEB_URLS="$(echo ${EXTRA_DEB_URLS:-})"
@@ -65,7 +66,8 @@ done
 set +f
 # BASE_TARGET (set by target.conf, which also sources the base target's target.conf): a
 # variant of another target. The build applies the base target's patches/series first and
-# then the variant's own patches/series, so the base patches are not copied.
+# then the variant's own patches/series (if it has one), so the base patches are not
+# copied. EXCLUDE_BASE_PATCHES names base patches the variant leaves out.
 PATCH_DIR="$TARGET_DIR/patches"
 BASE_TARGET_DIR=""
 if [ -n "${BASE_TARGET:-}" ]; then
@@ -74,6 +76,15 @@ if [ -n "${BASE_TARGET:-}" ]; then
         echo "ERROR: BASE_TARGET '$BASE_TARGET' of $TARGET has no patches/series" >&2
         exit 1
     fi
+    for p in ${EXCLUDE_BASE_PATCHES:-}; do
+        if ! grep -qxF "$p" "$BASE_TARGET_DIR/patches/series"; then
+            echo "ERROR: EXCLUDE_BASE_PATCHES names '$p', which is not in $BASE_TARGET/patches/series" >&2
+            exit 1
+        fi
+    done
+elif [ -n "${EXCLUDE_BASE_PATCHES:-}" ]; then
+    echo "ERROR: EXCLUDE_BASE_PATCHES is set, but $TARGET has no BASE_TARGET" >&2
+    exit 1
 fi
 # The php-common rebuild (pins in build.conf) only happens for targets that ask for it.
 if [ "${REBUILD_PHP_COMMON:-0}" != 1 ]; then
@@ -191,23 +202,30 @@ build_packages() {
         printf '%s=%s\n' "$var" "${!var:-}" >> "$env_file"
     done
 
-    # A variant gets one patch directory: the base target's patches, then its own, with
-    # one series listing both in that order.
+    # A variant gets one patch directory: the base target's patches without the ones in
+    # EXCLUDE_BASE_PATCHES, then its own, with one series listing both in that order.
     local target_mount="$TARGET_DIR"
     if [ -n "$BASE_TARGET_DIR" ]; then
         target_mount="$tmp_dir/target"
         mkdir -p "$target_mount/patches"
         cp -a "$BASE_TARGET_DIR/patches/." "$target_mount/patches/"
-        local f
-        for f in "$PATCH_DIR"/*; do
-            case "$(basename "$f")" in series|SOURCE.md) continue ;; esac
-            if [ -e "$target_mount/patches/$(basename "$f")" ]; then
-                echo "ERROR: $(basename "$f") is in both $BASE_TARGET and $TARGET" >&2
-                exit 1
-            fi
-            cp -a "$f" "$target_mount/patches/"
+        local f p
+        for p in ${EXCLUDE_BASE_PATCHES:-}; do
+            rm -f "$target_mount/patches/$p"
+            sed -i "\|^${p}\$|d" "$target_mount/patches/series"
+            echo "==> Leaving out base patch $p"
         done
-        cat "$BASE_TARGET_DIR/patches/series" "$PATCH_DIR/series" > "$target_mount/patches/series"
+        if [ -f "$PATCH_DIR/series" ]; then
+            for f in "$PATCH_DIR"/*; do
+                case "$(basename "$f")" in series|SOURCE.md) continue ;; esac
+                if [ -e "$BASE_TARGET_DIR/patches/$(basename "$f")" ]; then
+                    echo "ERROR: $(basename "$f") is in both $BASE_TARGET and $TARGET" >&2
+                    exit 1
+                fi
+                cp -a "$f" "$target_mount/patches/"
+            done
+            cat "$PATCH_DIR/series" >> "$target_mount/patches/series"
+        fi
         cp "$TARGET_DIR/target.conf" "$target_mount/"
     fi
 
@@ -293,6 +311,10 @@ collect_sources() {
         if [ -n "$BASE_TARGET_DIR" ]; then
             echo "base-target/   the target this one is a variant of ($BASE_TARGET): its patches"
             echo "               are added first, then the ones in target/ (both series in order)"
+            if [ -n "${EXCLUDE_BASE_PATCHES:-}" ]; then
+                echo "               Left out of the base patches (EXCLUDE_BASE_PATCHES in target.conf):"
+                for p in $EXCLUDE_BASE_PATCHES; do echo "                 $p"; done
+            fi
         fi
         echo "build.conf     global build settings"
         echo
