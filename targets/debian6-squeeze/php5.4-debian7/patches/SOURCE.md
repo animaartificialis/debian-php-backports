@@ -299,6 +299,15 @@ with CVE-2026-91766 (`0294`, which must come after it).
 Not applicable to 5.4 (see the gap analysis): CVE-2026-91767, CVE-2026-91769 (5.4
 checks only the CN, not the SAN), CVE-2026-91768 (5.4's FastCGI ACL is IPv4 only).
 
+Also not applicable to 5.4 (checked against the 5.4 code, 2026-11-22):
+
+- CVE-2024-3096 (`password_verify()` and NUL bytes): 5.4 has no `password_hash()` or
+  `password_verify()` (added in 5.5).
+- CVE-2024-8932 (`ldap_escape()` overflow): 5.4 has no `ldap_escape()` (added in 5.6).
+- CVE-2025-1219 (libxml streams use the wrong Content-Type after a redirect): the bug is
+  in code that reads the HTTP headers to find the document's charset (added with the
+  fix for bug #51903). 5.4's `ext/libxml` does not read the HTTP headers at all.
+
 Patch sha256:
 
 - `CVE-2020-7070-php54` `f936d8030b1619b2b0276b8260cf528f6277d28466506c5e675f421daa5f8b81`
