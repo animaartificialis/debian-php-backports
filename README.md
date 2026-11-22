@@ -190,7 +190,8 @@ See `targets/debian7-wheezy/php5.4-debian-extended/patches/SOURCE.md` for detail
 
 To use it, take the `-extended` tarball (or component) instead of the normal one; the
 commands under ["Installing"](#installing) are the same. Its version is the normal
-version plus `+ext1` (`5.4.45-0+deb7u30+animaa3+ext1`), so `apt-get upgrade` installs
+version plus `+ext1` (`5.4.45-0+deb7u30+animaa3+ext1` on wheezy,
+`5.4.45-1+animaa5+ext1~squeeze` on squeeze), so `apt-get upgrade` installs
 it over the normal packages.
 
 To switch back, point the apt line at the normal tarball again. `apt-get upgrade` does

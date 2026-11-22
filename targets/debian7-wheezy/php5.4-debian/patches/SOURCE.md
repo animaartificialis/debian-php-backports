@@ -133,6 +133,16 @@ Not applicable:
   stores each header line as it is read. (jessie has that code from ELTS and gets an
   own port, `0401` there.)
 
+- **CVE-2025-1217** (GHSA-v8xr-gpvj-cx9g, folded HTTP response headers) and
+  **CVE-2025-1734** (GHSA-pcmh-g36c-qc44, response headers without a colon): not ported,
+  low severity. 5.4's HTTP wrapper stores each response header line as it is read and
+  never joins folded lines, so the upstream bug (a folded continuation taken for part of
+  another header) does not exist in that form. But a folded `Location:` or
+  `Transfer-Encoding:` continuation is silently dropped (the redirect or the chunked
+  decoding does not happen), and lines without a colon, or with a space in the name,
+  go into `$http_response_header` as they are. The upstream fixes sit on the new header
+  parser of CVE-2025-1217 and would need an own port.
+
 Patch sha256:
 
 - `0390-…-php54` `b05177255b9b8d18e589ee651277c74a39529f83a09b22d950c40320983f1c92`

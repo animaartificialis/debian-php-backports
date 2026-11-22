@@ -140,3 +140,15 @@ variant. PHP 5.4 lays out the scoreboard differently from 5.6, so half of the pa
 has to be rewritten by hand, and it changes how the FPM master process manages
 shared memory. That could not be tested well enough here to ship it. It is left
 for a later round.
+
+## CVE-2025-1217 and CVE-2025-1734: not fixed
+
+- **CVE-2025-1217** (GHSA-v8xr-gpvj-cx9g, folded HTTP response headers) and
+  **CVE-2025-1734** (GHSA-pcmh-g36c-qc44, response headers without a colon): not ported,
+  low severity. 5.4's HTTP wrapper stores each response header line as it is read and
+  never joins folded lines, so the upstream bug (a folded continuation taken for part of
+  another header) does not exist in that form. But a folded `Location:` or
+  `Transfer-Encoding:` continuation is silently dropped (the redirect or the chunked
+  decoding does not happen), and lines without a colon, or with a space in the name,
+  go into `$http_response_header` as they are. The upstream fixes sit on the new header
+  parser of CVE-2025-1217 and would need an own port.
