@@ -6,7 +6,8 @@
 //   ... file_get_contents("http://127.0.0.1:$port/", ...) ...
 //   $requests = http_capture_stop($server);   // array of raw request heads
 //
-// In a response, {PORT} is replaced with the server's own port.
+// In a response, {PORT} is replaced with the server's own port. Pick ports below 32768:
+// higher ones are in Linux's range for outgoing connections and can be taken.
 
 function http_capture_start($port, array $responses)
 {
@@ -23,6 +24,8 @@ function http_capture_start($port, array $responses)
         if (trim($line) === 'READY') {
             return array($process, $pipes);
         }
+        // PHP prints a warning after an empty line, so read all of the output.
+        $line = trim($line . stream_get_contents($pipes[1]));
         fclose($pipes[0]);
         fclose($pipes[1]);
         proc_close($process);
