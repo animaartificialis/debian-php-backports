@@ -255,24 +255,75 @@ sha256_of() {
     sha256sum "$1" | cut -d' ' -f1
 }
 
+# Print "<sha256> <file name>" for every file in the Checksums-Sha256 section of a .dsc.
+dsc_files() {
+    awk '/^Checksums-Sha256:/ { s = 1; next } s && /^ / { print $1, $3; next } s { s = 0 }' "$1"
+}
+
+# cached <file name> <expected sha256>: true if the file is in the cache and matches.
+cached() {
+    [ -f "$CACHE_DIR/$1" ] && [ "$(sha256_of "$CACHE_DIR/$1")" = "$2" ]
+}
+
+# dsc_cached <dsc name> <expected dsc sha256>: true if the .dsc and all its files are cached.
+dsc_cached() {
+    local sha name
+    cached "$1" "$2" || return 1
+    while read -r sha name; do
+        cached "$name" "$sha" || return 1
+    done < <(dsc_files "$CACHE_DIR/$1")
+}
+
+# Sury's debian.tar.xz the patches were taken from (SURY_DEBIAN_TAR_URL), kept with the
+# sources where it can still be had; the build itself only needs the committed patches.
+sury_tar_name() {
+    basename "$SURY_DEBIAN_TAR_URL" | sed 's/%2B/+/g'
+}
+
+# Fill cache/<target>/ before a build. deb.sury.org keeps only the newest revision of each
+# source, so when a pinned file is not cached yet, the sources archived with an earlier
+# release are put in the cache first (build/fetch-archived-sources.sh); the pool is used
+# for whatever they do not have. CI starts with an empty cache, so it always looks there.
+seed_cache() {
+    local name
+    mkdir -p "$CACHE_DIR"
+    if ! dsc_cached "${SOURCE_PACKAGE}_${SOURCE_VERSION}.dsc" "$SOURCE_DSC_SHA256" \
+        || { [ -n "${PHP_COMMON_SOURCE_VERSION:-}" ] \
+             && ! dsc_cached "php-defaults_${PHP_COMMON_SOURCE_VERSION}.dsc" "$PHP_COMMON_DSC_SHA256"; }; then
+        "$REPO_ROOT/build/fetch-archived-sources.sh" "$TARGET" "$CACHE_DIR" || true
+    fi
+    if [ "$ARCH" = amd64 ] && [ -n "${SURY_DEBIAN_TAR_URL:-}" ]; then
+        name="$(sury_tar_name)"
+        if ! cached "$name" "${SURY_DEBIAN_TAR_SHA256:-}"; then
+            echo "==> Downloading $SURY_DEBIAN_TAR_URL"
+            if curl -fsSL --retry 3 -o "$CACHE_DIR/$name.part" "$SURY_DEBIAN_TAR_URL"; then
+                mv "$CACHE_DIR/$name.part" "$CACHE_DIR/$name"
+            fi
+            rm -f "$CACHE_DIR/$name.part"
+            cached "$name" "${SURY_DEBIAN_TAR_SHA256:-}" \
+                || echo "WARNING: no copy of $name matching SURY_DEBIAN_TAR_SHA256; it is not kept with the sources" >&2
+        fi
+    fi
+}
+
 # copy_dsc <dsc name> <expected dsc sha256> <dest dir>: copy a source package (the .dsc and
 # every file in its Checksums-Sha256 section) from the cache, verifying each file again.
 copy_dsc() {
     local dsc="$1" expected="$2" dest="$3" sha name count=0
-    if [ ! -f "$CACHE_DIR/$dsc" ] || [ "$(sha256_of "$CACHE_DIR/$dsc")" != "$expected" ]; then
+    if ! cached "$dsc" "$expected"; then
         echo "ERROR: $CACHE_DIR/$dsc is missing or does not match its pinned sha256" >&2
         exit 1
     fi
     mkdir -p "$dest"
     cp "$CACHE_DIR/$dsc" "$dest/"
     while read -r sha name; do
-        if [ ! -f "$CACHE_DIR/$name" ] || [ "$(sha256_of "$CACHE_DIR/$name")" != "$sha" ]; then
+        if ! cached "$name" "$sha"; then
             echo "ERROR: $CACHE_DIR/$name (from $dsc) is missing or does not match the .dsc" >&2
             exit 1
         fi
         cp "$CACHE_DIR/$name" "$dest/"
         count=$((count + 1))
-    done < <(awk '/^Checksums-Sha256:/ { s = 1; next } s && /^ / { print $1, $3; next } s { s = 0 }' "$CACHE_DIR/$dsc")
+    done < <(dsc_files "$CACHE_DIR/$dsc")
     [ "$count" -gt 0 ] || { echo "ERROR: no files listed in $dsc" >&2; exit 1; }
 }
 
@@ -287,6 +338,10 @@ collect_sources() {
     copy_dsc "${SOURCE_PACKAGE}_${SOURCE_VERSION}.dsc" "$SOURCE_DSC_SHA256" "$SOURCES_DIR/upstream"
     if [ -n "${PHP_COMMON_SOURCE_VERSION:-}" ]; then
         copy_dsc "php-defaults_${PHP_COMMON_SOURCE_VERSION}.dsc" "$PHP_COMMON_DSC_SHA256" "$SOURCES_DIR/php-defaults"
+    fi
+    if [ -n "${SURY_DEBIAN_TAR_URL:-}" ] && cached "$(sury_tar_name)" "${SURY_DEBIAN_TAR_SHA256:-}"; then
+        mkdir -p "$SOURCES_DIR/sury"
+        cp "$CACHE_DIR/$(sury_tar_name)" "$SOURCES_DIR/sury/"
     fi
     # The target's target.conf, patches and SOURCE.md, plus the global build settings.
     mkdir -p "$SOURCES_DIR/target"
@@ -307,6 +362,10 @@ collect_sources() {
             echo "php-defaults/  the php-common source, as pinned in build.conf:"
             echo "               php-defaults $PHP_COMMON_SOURCE_VERSION from deb.sury.org"
         fi
+        if [ -d "$SOURCES_DIR/sury" ]; then
+            echo "sury/          Sury's debian.tar.xz the patches in target/ were taken from:"
+            echo "               $SURY_DEBIAN_TAR_URL"
+        fi
         echo "target/        target.conf and the patches added to debian/patches/series"
         if [ -n "$BASE_TARGET_DIR" ]; then
             echo "base-target/   the target this one is a variant of ($BASE_TARGET): its patches"
@@ -326,9 +385,9 @@ collect_sources() {
 
 START_TIME="$(date +%s)"
 case "$ACTION" in
-    image) build_image ;;
-    build) build_packages; collect_sources ;;
-    all) build_image; build_packages; collect_sources ;;
+    image) seed_cache; build_image ;;
+    build) seed_cache; build_packages; collect_sources ;;
+    all) seed_cache; build_image; build_packages; collect_sources ;;
     *) usage ;;
 esac
 ELAPSED=$(( $(date +%s) - START_TIME ))

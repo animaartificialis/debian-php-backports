@@ -362,9 +362,16 @@ The upstream test suite is skipped (`nocheck`); it takes hours on these releases
 Old source versions disappear from the upstream archives, so every release also has a
 `${RELEASE}_${TARGET}_source.tar.gz` for each target. It holds the exact sources the
 packages were built from: the `.dsc` with its tarballs, the `php-defaults` source for
-`php-common` where it is rebuilt, and the target's `target.conf` and patches. Check it
+`php-common` where it is rebuilt, Sury's `debian.tar.xz` where a target takes patches from
+it (if it could still be downloaded), and the target's `target.conf` and patches. Check it
 against `SHA256SUMS` like the other tarballs; `dpkg-source -x` unpacks the `.dsc` offline.
 A local build puts the same files in `sources/<release>/<php>/`.
+
+deb.sury.org keeps only the newest revision of each source. When it removes a pinned
+revision, the build falls back to these archived sources: `build/build.sh` puts the files
+of the newest release's `*_source.tar.gz` into `cache/<release>/<php>/` and checks each one
+against its pinned SHA256 as usual. So a new Sury revision does not break the build, and
+updating to it is no longer urgent.
 
 Two kinds of changes go beyond adding the fix, each recorded in the target's `SOURCE.md`:
 

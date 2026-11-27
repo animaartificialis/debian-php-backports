@@ -24,8 +24,25 @@ TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
 TARBALL="$TMP_DIR/debian.tar.xz"
-echo "==> Downloading $SURY_DEBIAN_TAR_URL"
-curl -fsSL --retry 3 -o "$TARBALL" "$SURY_DEBIAN_TAR_URL"
+# A build keeps the tarball in cache/<target>/ and archives it with the release sources;
+# deb.sury.org keeps only the newest revision, so the cache or the archive may be the
+# only copy of a pinned one.
+CACHED="$REPO_ROOT/cache/$TARGET/$(basename "$SURY_DEBIAN_TAR_URL" | sed 's/%2B/+/g')"
+is_pinned() {
+    [ -f "$1" ] && [ -n "${SURY_DEBIAN_TAR_SHA256:-}" ] \
+        && [ "$(sha256sum "$1" | cut -d' ' -f1)" = "$SURY_DEBIAN_TAR_SHA256" ]
+}
+if is_pinned "$CACHED"; then
+    echo "==> Using cached $CACHED"
+    cp "$CACHED" "$TARBALL"
+else
+    echo "==> Downloading $SURY_DEBIAN_TAR_URL"
+    if ! curl -fsSL --retry 3 -o "$TARBALL" "$SURY_DEBIAN_TAR_URL"; then
+        "$REPO_ROOT/build/fetch-archived-sources.sh" "$TARGET"
+        is_pinned "$CACHED" || { echo "ERROR: $SURY_DEBIAN_TAR_URL is neither in the pool nor archived" >&2; exit 1; }
+        cp "$CACHED" "$TARBALL"
+    fi
+fi
 
 TARBALL_SHA256="$(sha256sum "$TARBALL" | cut -d' ' -f1)"
 if [ -z "${SURY_DEBIAN_TAR_SHA256:-}" ]; then
