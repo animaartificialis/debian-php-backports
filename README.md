@@ -147,7 +147,7 @@ The apt component says where the source comes from, and therefore what adding it
   even the release's own versions. Tags up to `v2026.10.23.1` shipped that binary
   (on focal too, although focal's own 2:75 would do). Now the `sury` component ships
   `php-common` rebuilt from the same `php-defaults` source with that field removed, as
-  `2:106~exp1+debsuryorg12.1+1+animaa1` on every release: Sury's version
+  `2:108~exp1+debsuryorg12.1+1+animaa1` on every release: Sury's version
   plus the suffix, so it sorts above his binary and replaces it with a normal
   `apt-get upgrade`. Extensions that an earlier upgrade removed can then be installed
   again (from your own copy; the old repositories are gone).

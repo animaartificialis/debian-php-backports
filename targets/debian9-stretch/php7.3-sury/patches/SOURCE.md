@@ -18,7 +18,7 @@ Changes:
   pcre2_match_8`),
 - the secure-DNS telemetry patch `0125` and its follow-up `0224` are dropped from the series,
 - shipped alongside: `libargon2-1` 0~20171227-0.2 from buster (stretch's is older than
-  PHP 7.3 needs; it depends only on glibc >= 2.14), and `php-common` rebuilt from Sury's `php-defaults` 106~exp1+debsuryorg12.1+1
+  PHP 7.3 needs; it depends only on glibc >= 2.14), and `php-common` rebuilt from Sury's `php-defaults` 108~exp1+debsuryorg12.1+1
   (`.dsc` SHA256 pinned in `build/build.conf`) without the `Breaks` field of `php-common`:
   it lists older PECL extension packages (`php-apcu (<< 5.1.24-1~)`, `php-imagick
   (<< 3.7.0-12~)`, …) that do not work with PHP 8, and would make apt remove working
